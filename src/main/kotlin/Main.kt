@@ -1,8 +1,7 @@
-package org.kraytracer
+package org.kotlingl
 
-import org.kraytracer.KRayTracer
-import org.kraytracer.shapes.Circle
-import org.kraytracer.shapes.Vector3
+import org.kotlingl.shapes.Circle
+import org.kotlingl.shapes.Vector3
 
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
@@ -18,7 +17,7 @@ fun main() {
 //        println("i = $i")
 //    }
 
-    KRayTracer().apply {
+    Renderer().apply {
         addCamera(Camera())
         addShape( Circle(
             Vector3(0f, 0f, 10f),

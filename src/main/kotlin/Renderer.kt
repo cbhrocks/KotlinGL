@@ -1,8 +1,8 @@
-package org.kraytracer
+package org.kotlingl
 
-import org.kraytracer.shapes.Ray
-import org.kraytracer.shapes.Shape
-import org.kraytracer.shapes.Vector3
+import org.kotlingl.shapes.Ray
+import org.kotlingl.shapes.Shape
+import org.kotlingl.shapes.Vector3
 import org.lwjgl.Version
 import org.lwjgl.glfw.Callbacks
 import org.lwjgl.glfw.GLFW
@@ -15,7 +15,7 @@ import org.lwjgl.system.MemoryUtil
 import java.nio.ByteBuffer
 import java.nio.IntBuffer
 
-class KRayTracer {
+class Renderer {
     // The window handle
     private var window: Long = 0
     private var shapes = mutableListOf<Shape>()

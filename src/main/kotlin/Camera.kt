@@ -1,7 +1,7 @@
-package org.kraytracer
+package org.kotlingl
 
-import org.kraytracer.shapes.Ray
-import org.kraytracer.shapes.Vector3
+import org.kotlingl.shapes.Ray
+import org.kotlingl.shapes.Vector3
 import org.lwjgl.opengl.GL11
 import java.nio.ByteBuffer
 import kotlin.math.PI

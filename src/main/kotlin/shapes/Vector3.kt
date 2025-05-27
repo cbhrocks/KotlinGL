@@ -1,4 +1,4 @@
-package org.kraytracer.shapes
+package org.kotlingl.shapes
 
 data class Vector3(val x: Float, val y: Float, val z: Float) {
 

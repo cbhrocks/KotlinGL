@@ -1,4 +1,4 @@
-package org.kraytracer.shapes
+package org.kotlingl.shapes
 
 class Circle(
     val center: Vector3 = Vector3(0f,0f,0f),

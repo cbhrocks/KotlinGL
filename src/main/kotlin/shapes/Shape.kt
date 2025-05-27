@@ -1,4 +1,4 @@
-package org.kraytracer.shapes
+package org.kotlingl.shapes
 
 interface Shape {
 
