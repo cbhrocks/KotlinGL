@@ -1,8 +1,9 @@
-package org.kraytracer
+package org.kotlingl
 
-import org.kraytracer.shapes.Ray
-import org.kraytracer.shapes.Shape
-import org.kraytracer.shapes.Vector3
+import org.kotlingl.entity.ColorRGB
+import org.kotlingl.shapes.Ray
+import org.kotlingl.shapes.Shape
+import org.kotlingl.math.Vector3
 
 data class Scene(
     var cameras: MutableList<Camera> = mutableListOf<Camera>(Camera()),
@@ -15,13 +16,13 @@ data class Scene(
         }
     }
 
-    fun traceRay(ray: Ray): Vector3 {
+    fun traceRay(ray: Ray): ColorRGB {
         for (shape in this.shapes) {
             if (shape.intersects(ray)) {
                 return shape.color
             }
         }
-        return Vector3(0f, 0f, 0f)
+        return ColorRGB.BLACK
     }
 
     fun getActiveCamera(): Camera {

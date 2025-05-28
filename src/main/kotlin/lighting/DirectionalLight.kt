@@ -1,9 +1,10 @@
 package org.kotlingl.lights
 
-import org.kotlingl.shapes.Vector3
+import org.kotlingl.entity.ColorRGB
+import org.kotlingl.math.Vector3
 
 class DirectionalLight(
-    override val Color: Vector3,
+    override val color: ColorRGB,
     override val origin: Vector3
 ) : Light {
 

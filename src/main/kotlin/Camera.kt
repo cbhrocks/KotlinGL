@@ -1,7 +1,7 @@
 package org.kotlingl
 
+import org.kotlingl.math.*
 import org.kotlingl.shapes.Ray
-import org.kotlingl.shapes.Vector3
 import org.lwjgl.opengl.GL11
 import java.nio.ByteBuffer
 import kotlin.math.PI
@@ -50,7 +50,7 @@ class Camera(
         get() {
             return (this.lookAt - this.position).normalize()
         }
-        set(direction: Vector3){
+        set(direction){
             this.lookAt = this.position + direction
         }
 
@@ -59,7 +59,7 @@ class Camera(
             return this.resX/this.resY.toFloat()
         }
 
-    fun generateRay(
+    private fun generateRay(
         pixelX: Int,
         pixelY: Int
     ): Ray {

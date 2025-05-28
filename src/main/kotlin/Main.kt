@@ -1,7 +1,9 @@
 package org.kotlingl
 
+import org.kotlingl.entity.ColorRGB
+import org.kotlingl.math.Vector3
 import org.kotlingl.shapes.Circle
-import org.kotlingl.shapes.Vector3
+import org.kotlingl.Scene
 
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
@@ -22,7 +24,7 @@ fun main() {
             Circle(
                 Vector3(0f, 0f, 10f),
                 1f,
-                Vector3(0f, 255f, 0f)
+                ColorRGB.GREEN
             )
         ),
         cameras = mutableListOf(
