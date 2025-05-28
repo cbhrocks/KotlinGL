@@ -17,12 +17,18 @@ fun main() {
 //        println("i = $i")
 //    }
 
-    Renderer().apply {
-        addCamera(Camera())
-        addShape( Circle(
-            Vector3(0f, 0f, 10f),
-            1f,
-            Vector3(0f, 255f, 0f)
-        ))
-    }.run()
+    val scene = Scene(
+        shapes = mutableListOf(
+            Circle(
+                Vector3(0f, 0f, 10f),
+                1f,
+                Vector3(0f, 255f, 0f)
+            )
+        ),
+        cameras = mutableListOf(
+            Camera()
+        )
+    )
+
+    Renderer(scene).run()
 }

@@ -14,12 +14,15 @@ class Camera(
     var resY: Int = 240,
     var fieldOfView: Float = 120f
 ) {
-    val textureId: Int
+    var textureId: Int? = null
 
     init {
+    }
+
+    fun initGL() {
         // create opengl texture
-        textureId = GL11.glGenTextures()
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureId)
+        this.textureId = GL11.glGenTextures()
+        GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureId!!)
         GL11.glTexImage2D(
             GL11.GL_TEXTURE_2D,
             0,

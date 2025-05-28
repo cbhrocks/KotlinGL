@@ -3,6 +3,7 @@ package org.kotlingl
 import org.kotlingl.shapes.Ray
 import org.kotlingl.shapes.Shape
 import org.kotlingl.shapes.Vector3
+import org.kraytracer.Scene
 import org.lwjgl.Version
 import org.lwjgl.glfw.Callbacks
 import org.lwjgl.glfw.GLFW
@@ -15,11 +16,9 @@ import org.lwjgl.system.MemoryUtil
 import java.nio.ByteBuffer
 import java.nio.IntBuffer
 
-class Renderer {
+class Renderer(val scene: Scene) {
     // The window handle
     private var window: Long = 0
-    private var shapes = mutableListOf<Shape>()
-    private var camera: Camera? = null
 
     init {
         // Setup an error callback. The default implementation
@@ -81,6 +80,7 @@ class Renderer {
         // creates the GLCapabilities instance and makes the OpenGL
         // bindings available for use.
         GL.createCapabilities()
+        this.scene.initGL()
     }
 
     fun run() {
@@ -97,23 +97,6 @@ class Renderer {
         GLFW.glfwSetErrorCallback(null)?.free()
     }
 
-    fun addShape(shape: Shape) {
-        this.shapes.add(shape)
-    }
-
-    fun addCamera(camera: Camera) {
-        this.camera = camera
-    }
-
-    private fun traceRay(ray: Ray): Vector3 {
-        for (shape in this.shapes) {
-            if (shape.intersects(ray)) {
-                return shape.color
-            }
-        }
-        return Vector3(0f, 0f, 0f)
-    }
-
     private fun traceRays(camera: Camera, width: Int, height: Int) {
         val rays = camera.generateRays()
 
@@ -121,7 +104,7 @@ class Renderer {
         val pixels = ByteBuffer.allocateDirect(width * height * 3)
         // put colors for each ray in pixel buffer
         rays.forEachIndexed { index, ray ->
-            val color = traceRay(ray)
+            val color = this.scene.traceRay(ray)
             pixels.put(color.r.toByte())
             pixels.put(color.g.toByte())
             pixels.put(color.b.toByte())
@@ -132,7 +115,7 @@ class Renderer {
         // upload pixel buffer to texture
         pixels.rewind()
 
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, camera.textureId)
+        GL11.glBindTexture(GL11.GL_TEXTURE_2D, camera.textureId!!)
         GL11.glTexSubImage2D(
             GL11.GL_TEXTURE_2D,
             0,
@@ -164,9 +147,7 @@ class Renderer {
         while (!GLFW.glfwWindowShouldClose(window)) {
             GL11.glClear(GL11.GL_COLOR_BUFFER_BIT or GL11.GL_DEPTH_BUFFER_BIT) // clear the framebuffer
 
-            if (this.camera != null) {
-                traceRays(this.camera!!, 480, 240)
-            }
+            traceRays(this.scene.getActiveCamera(), 480, 240)
 
             GLFW.glfwSwapBuffers(window) // swap the color buffers
 
