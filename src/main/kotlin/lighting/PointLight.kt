@@ -1,17 +1,19 @@
-package org.kotlingl.lights
+package org.kotlingl.lighting
 
 import org.kotlingl.entity.ColorRGB
 import org.kotlingl.entity.Intersection
+import org.kotlingl.lights.Light
 import org.kotlingl.math.*
 
-class DirectionalLight(
+class PointLight(
     override val color: ColorRGB,
-    val direction: Vector3,
+    val position: Vector3,
     override val brightness: Float,
     override var contributesToShadows: Boolean = true
-) : Light {
+): Light {
+
     override fun getDirection(toPoint: Vector3): Vector3 {
-        return -direction.normalize()
+        return toPoint.directionTo(position)
     }
 
     override fun computeIntensity(hit: Intersection, direction: Vector3): Vector3 {
@@ -20,6 +22,6 @@ class DirectionalLight(
     }
 
     override fun getDistance(point: Vector3): Float {
-        return Float.POSITIVE_INFINITY
+        return position.distanceTo(point)
     }
 }

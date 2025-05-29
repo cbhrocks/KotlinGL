@@ -17,7 +17,7 @@ import org.lwjgl.system.MemoryUtil
 import java.nio.ByteBuffer
 import java.nio.IntBuffer
 
-class Renderer(val scene: Scene) {
+class Renderer(val scene: Scene, var width: Int, var height: Int) {
     // The window handle
     private var window: Long = 0
 
@@ -35,7 +35,7 @@ class Renderer(val scene: Scene) {
         GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_TRUE) // the window will be resizable
 
         // Create the window
-        window = GLFW.glfwCreateWindow(480, 240, "Hello World!", MemoryUtil.NULL, MemoryUtil.NULL)
+        window = GLFW.glfwCreateWindow(width, height, "Hello World!", MemoryUtil.NULL, MemoryUtil.NULL)
         if (window == MemoryUtil.NULL) throw RuntimeException("Failed to create the GLFW window")
 
         // Setup a key callback. It will be called every time a key is pressed, repeated or released.
@@ -98,14 +98,15 @@ class Renderer(val scene: Scene) {
         GLFW.glfwSetErrorCallback(null)?.free()
     }
 
-    private fun traceRays(camera: Camera, width: Int, height: Int) {
+    private fun traceRays(camera: Camera) {
         val rays = camera.generateRays()
 
         // create pixel buffer
-        val pixels = ByteBuffer.allocateDirect(width * height * 3)
+        val pixels = ByteBuffer.allocateDirect(rays.size * 3)
         // put colors for each ray in pixel buffer
         rays.forEachIndexed { index, ray ->
             val color = this.scene.traceRay(ray)
+
             pixels.put(color.r.toByte())
             pixels.put(color.g.toByte())
             pixels.put(color.b.toByte())
@@ -148,7 +149,7 @@ class Renderer(val scene: Scene) {
         while (!GLFW.glfwWindowShouldClose(window)) {
             GL11.glClear(GL11.GL_COLOR_BUFFER_BIT or GL11.GL_DEPTH_BUFFER_BIT) // clear the framebuffer
 
-            traceRays(this.scene.getActiveCamera(), 480, 240)
+            traceRays(this.scene.activeCamera)
 
             GLFW.glfwSwapBuffers(window) // swap the color buffers
 

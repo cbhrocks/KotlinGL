@@ -8,11 +8,11 @@ import kotlin.math.PI
 
 class Camera(
     var position: Vector3 = Vector3(0f,0f,0f),
-    var lookAt: Vector3 = Vector3(0f,0f,1f),
+    var lookAt: Vector3 = Vector3(0f,0f,-1f),
     var up: Vector3 = Vector3(0f,1f,0f),
     var resX: Int = 480,
     var resY: Int = 240,
-    var fieldOfView: Float = 120f
+    var fieldOfView: Float = 90f
 ) {
     var textureId: Int? = null
 
@@ -56,7 +56,7 @@ class Camera(
 
     val aspectRatio: Float
         get() {
-            return this.resX/this.resY.toFloat()
+            return this.resX.toFloat()/this.resY.toFloat()
         }
 
     private fun generateRay(
@@ -67,7 +67,7 @@ class Camera(
         val trueUp = (right cross this.direction)
 
         // compute viewport dimensions. Viewport is a plane floating distance 1 in front of the camera
-        val viewportHeight = 2 * kotlin.math.tan(this.FoVRadians/2)
+        val viewportHeight = 2f * kotlin.math.tan(this.FoVRadians/2f)
         val viewportWidth = viewportHeight * aspectRatio
 
         // compute image plane position (origin) and horizontal/vertical vectors

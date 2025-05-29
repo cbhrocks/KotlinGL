@@ -1,6 +1,8 @@
 package org.kotlingl.math
 
 import org.kotlingl.entity.ColorRGB
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 class Vector2(val x: Float, val y: Float) {
     companion object {
@@ -24,11 +26,18 @@ operator fun Vector2.plus(other: Vector2) = Vector2(x + other.x, y + other.y)
 operator fun Vector3.minus(other: Vector3) = Vector3(x - other.x, y - other.y, z - other.z)
 operator fun Vector2.minus(other: Vector2) = Vector2(x - other.x, y - other.y)
 
+operator fun Vector3.unaryMinus(): Vector3 = Vector3(-x, -y, -z)
+operator fun Vector2.unaryMinus(): Vector2 = Vector2(-x, -y)
+
 operator fun Vector3.times(scalar: Float) = Vector3(x * scalar, y * scalar, z * scalar)
 operator fun Vector2.times(scalar: Float) = Vector2(x * scalar, y * scalar)
+operator fun Vector3.times(vector: Vector3) = Vector3(x * vector.x, y * vector.y, z * vector.z)
+operator fun Vector2.times(vector: Vector2) = Vector2(x * vector.x, y * vector.y)
 
 operator fun Vector3.div(scalar: Float) = Vector3(x / scalar, y / scalar, z / scalar)
 operator fun Vector2.div(scalar: Float) = Vector2(x / scalar, y / scalar)
+operator fun Vector3.div(other: Vector3) = Vector3(x / other.x, y / other.y, z / other.z)
+operator fun Vector2.div(other: Vector3) = Vector2(x / other.x, y / other.y)
 
 fun Vector3.toString() = "(${this.x}, ${this.y}, ${this.z})"
 fun Vector2.toString() = "(${this.x}, ${this.y})"
@@ -54,6 +63,18 @@ fun Vector3.normalize(): Vector3 {
 fun Vector2.normalize(): Vector2 {
     val len = length()
     return if (len == 0f) this else this / len
+}
+
+fun Vector3.directionTo(other: Vector3): Vector3 = (other - this).normalize()
+fun Vector2.directionTo(other: Vector2): Vector2 = (other - this).normalize()
+
+fun Vector3.distanceTo(other: Vector3): Float {
+    val vec = other - this
+    return sqrt(vec.x.pow(2) + vec.y.pow(2) + vec.z.pow(2))
+}
+fun Vector2.distanceTo(other: Vector2): Float {
+    val vec = other - this
+    return sqrt(vec.x.pow(2) + vec.y.pow(2))
 }
 
 fun ColorRGB.toVector3(): Vector3 = Vector3(r / 255f, g / 255f, b / 255f)

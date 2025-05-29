@@ -18,6 +18,7 @@ data class ColorRGB(
     }
 
     companion object {
+        val GREY = ColorRGB(122, 122, 122)
         val BLACK = ColorRGB(0, 0, 0)
         val WHITE = ColorRGB(255, 255, 255)
         val RED = ColorRGB(255, 0, 0)
