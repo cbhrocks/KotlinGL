@@ -57,7 +57,11 @@ class DiffuseStage : ShadingStage {
             }
 
             val intensity = light.computeIntensity(hit, lightDir)
-            acc + hit.material.color.toVector3() * intensity
+
+            val color = hit.material.texture?.sample(hit.uv ?: Vector2(0f, 0f))
+                ?: hit.material.color
+
+            acc + color.toVector3() * intensity
         }
     }
 }
