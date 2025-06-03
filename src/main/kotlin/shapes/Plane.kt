@@ -8,7 +8,7 @@ import kotlin.math.abs
 class Plane(
     var position: Vector3,
     var normal: Vector3,
-    override val material: Material,
+    val material: Material,
     tangent: Vector3? = null
 ) : Shape {
     var tangent: Vector3

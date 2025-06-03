@@ -10,6 +10,7 @@ import org.kotlingl.lighting.*
 import org.kotlingl.lights.DirectionalLight
 import org.kotlingl.math.Vector2
 import org.kotlingl.math.unaryMinus
+import org.kotlingl.model.Vertex
 import org.kotlingl.shapes.Plane
 import org.kotlingl.shapes.Triangle
 import java.awt.image.BufferedImage
@@ -77,15 +78,24 @@ fun main() {
                 )
             ),
             Triangle(
-                Vector3(-3f, 3f, -3f),
-                Vector3(3f, 3f, -3f),
-                Vector3(0f, 4f, -3f),
+                Vertex(
+                    Vector3(-3f, 3f, -3f),
+                    Vector3.UNIT_Z,
+                    Vector2(0f, 0f),
+                ),
+                Vertex(
+                    Vector3(3f, 3f, -3f),
+                    Vector3.UNIT_Z,
+                    Vector2(1f, 0f),
+                ),
+                Vertex(
+                    Vector3(0f, 4f, -3f),
+                    Vector3.UNIT_Z,
+                    Vector2(.5f, 1f),
+                ),
                 Material(
                     texture=Texture.fromImageFile("/textures/numbered-checker.png")
                 ),
-                uv0=Vector2(0f, 0f),
-                uv1=Vector2(1f, 0f),
-                uv2=Vector2(.5f, 1f),
             ),
             Plane(
                 Vector3(-.5f, 0f, -3f),

@@ -3,36 +3,22 @@ package org.kotlingl.shapes
 import org.kotlingl.entity.Intersection
 import org.kotlingl.entity.Material
 import org.kotlingl.math.*
+import org.kotlingl.model.Vertex
 
 // use winding order same as opengl. counter-clockwise for front face, clockwise for backface
 class Triangle (
-    val v0: Vector3,
-    val v1: Vector3,
-    val v2: Vector3,
-    override val material: Material,
-    normal: Vector3? = null,
-    uv0: Vector2? = null,
-    uv1: Vector2? = null,
-    uv2: Vector2? = null,
+    val v0: Vertex,
+    val v1: Vertex,
+    val v2: Vertex,
+    val material: Material,
 ) : Shape {
-    val normal: Vector3
-    val uv0: Vector2
-    val uv1: Vector2
-    val uv2: Vector2
 
-    init {
-        val edge1 = v1 - v0
-        val edge2 = v2 - v0
-        this.normal = normal ?: edge1.cross(edge2).normalize()
-        this.uv0 = uv0 ?: Vector2(0f, 0f)
-        this.uv1 = uv1 ?: Vector2(1f, 0f)
-        this.uv2 = uv2 ?: Vector2(1f, 1f)
-    }
+    private var faceNormal: Vector3 = (v1.position - v0.position).cross(v2.position - v0.position).normalize()
 
     // Möller–Trumbore Triangle-Ray Intersection
     override fun intersects(ray: Ray): Intersection? {
-        val edge1 = v1 - v0
-        val edge2 = v2 - v0
+        val edge1 = v1.position - v0.position
+        val edge2 = v2.position - v0.position
         val h = ray.direction cross edge2
         val a = edge1 dot h
 
@@ -42,7 +28,7 @@ class Triangle (
         }
 
         val f = 1f / a
-        val s = ray.origin - v0
+        val s = ray.origin - v0.position
         val u = f * s.dot(h)
 
         if (u < 0.0f || u > 1.0f) {
@@ -61,16 +47,16 @@ class Triangle (
 
         val uv = if (material.texture != null) {
             val w = 1f - u - v
-            uv0 * w + uv1 * u + uv2 * v
+            v0.uv * w + v1.uv * u + v2.uv * v
         } else null
 
         return if (t > EPSILON) {
             Intersection(
                 ray.origin + ray.direction * t,
-                normal,
+                faceNormal,
                 t,
                 material,
-                normal dot (ray.origin + ray.direction) > 0f,
+                faceNormal dot (ray.origin + ray.direction) > 0f,
                 uv
             )
         } else null // Ray intersection, return distance t

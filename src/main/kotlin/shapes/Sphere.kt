@@ -10,7 +10,7 @@ import kotlin.math.sqrt
 class Sphere(
     val center: Vector3 = Vector3(0f,0f,0f),
     val radius: Float = 1f,
-    override val material: Material,
+    val material: Material,
     val up: Vector3 = Vector3.UNIT_Y,
     val right: Vector3 = Vector3.UNIT_X
 ): Shape {
