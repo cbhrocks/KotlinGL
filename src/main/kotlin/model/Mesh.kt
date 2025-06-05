@@ -23,9 +23,6 @@ class Mesh(
         }
     }
 
-    //override fun intersects(ray: Ray): Intersection? {
-    //}
-
     fun getTriangles(material: Material): List<Triangle> {
         return indices.chunked(3).map({ (i0, i1, i2) ->
             Triangle(

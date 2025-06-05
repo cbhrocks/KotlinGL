@@ -30,7 +30,7 @@ class Sphere(
         val z = local.dot(forward)
 
         val u = 0.5f + atan2(z, x) / (2f * Math.PI.toFloat())
-        val v = 0.5f - asin(y) / Math.PI.toFloat()
+        val v = 0.5f + asin(y) / Math.PI.toFloat()
 
         return Vector2(u, v)
     }

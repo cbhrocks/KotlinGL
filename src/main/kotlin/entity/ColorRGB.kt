@@ -1,6 +1,6 @@
 package org.kotlingl.entity
 
-import org.kotlingl.math.Vector3
+import org.joml.Vector3f
 
 data class ColorRGB(
     var red: Int,
@@ -40,9 +40,13 @@ data class ColorRGB(
     override fun toString(): String {
         return "R: $r, G: $g, B: $b, A: $a"
     }
+
+   fun toVector3f(): Vector3f {
+       return Vector3f(r/255f, g/255f, b/255f)
+    }
 }
 
-fun Vector3.toColor(): ColorRGB =
+fun Vector3f.toColor(): ColorRGB =
     ColorRGB(
         (x * 255f).toInt().coerceIn(0, 255),
         (y * 255f).toInt().coerceIn(0, 255),

@@ -1,5 +1,6 @@
 package org.kotlingl.lighting
 
+import org.joml.Vector3f
 import org.kotlingl.entity.Intersection
 import org.kotlingl.Scene
 import org.kotlingl.entity.ColorRGB
@@ -12,7 +13,7 @@ class Shader private constructor(
     private val stages: List<ShadingStage>
 ){
     fun shade(hit: Intersection, scene: Scene, bounce: Int): ColorRGB {
-        return stages.fold(Vector3(0f, 0f, 0f)) { acc, stage ->
+        return stages.fold(Vector3f(0f, 0f, 0f)) { acc, stage ->
             acc + stage.shade(hit, scene, bounce)
         }.toColor()
     }
@@ -30,12 +31,12 @@ class Shader private constructor(
 }
 
 interface ShadingStage {
-    fun shade(hit: Intersection, scene: Scene, bounce: Int): Vector3
+    fun shade(hit: Intersection, scene: Scene, bounce: Int): Vector3f
 }
 
 class DiffuseStage : ShadingStage {
-    override fun shade(hit: Intersection, scene: Scene, bounce: Int): Vector3 {
-        return scene.lights.fold(Vector3.ZERO) { acc, light ->
+    override fun shade(hit: Intersection, scene: Scene, bounce: Int): Vector3f {
+        return scene.lights.fold(Vector3f()) { acc, light ->
             val lightDir = light.getDirection(hit.point)
 
             //backfacing rejection

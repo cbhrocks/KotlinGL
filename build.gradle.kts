@@ -8,6 +8,7 @@ group = "org.example"
 version = "1.0-SNAPSHOT"
 
 val lwjglVersion = "3.3.6"
+val jomlVersion = "1.10.8"
 
 val lwjglNatives = Pair(
     System.getProperty("os.name")!!,
@@ -38,6 +39,7 @@ repositories {
 
 dependencies {
     implementation(platform("org.lwjgl:lwjgl-bom:$lwjglVersion"))
+    implementation("org.joml:joml:$jomlVersion")
 
     implementation("org.lwjgl", "lwjgl")
     implementation("org.lwjgl", "lwjgl-assimp")

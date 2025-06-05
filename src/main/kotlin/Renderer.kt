@@ -151,6 +151,8 @@ class Renderer(val scene: Scene, var width: Int, var height: Int) {
 
             traceRays(this.scene.activeCamera)
 
+            println("swapping buffers")
+
             GLFW.glfwSwapBuffers(window) // swap the color buffers
 
             // Poll for window events. The key callback above will only be
