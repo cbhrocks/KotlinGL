@@ -1,22 +1,18 @@
 package org.kotlingl
 
+import org.joml.Vector2f
+import org.joml.Vector3f
 import org.kotlingl.entity.ColorRGB
-import org.kotlingl.math.Vector3
-import org.kotlingl.shapes.Sphere
 import org.kotlingl.entity.Material
 import org.kotlingl.entity.Texture
 import org.kotlingl.entity.WrapMode
 import org.kotlingl.lighting.*
 import org.kotlingl.lights.DirectionalLight
-import org.kotlingl.math.Vector2
-import org.kotlingl.math.unaryMinus
 import org.kotlingl.model.Model
 import org.kotlingl.model.Vertex
 import org.kotlingl.shapes.Plane
+import org.kotlingl.shapes.Sphere
 import org.kotlingl.shapes.Triangle
-import java.awt.image.BufferedImage
-import java.io.File
-import javax.imageio.ImageIO
 
 fun main() {
     val width = 480
@@ -31,8 +27,8 @@ fun main() {
             .build(),
         cameras = mutableListOf(
             Camera(
-                Vector3.UNIT_Y,
-                lookAt = Vector3(0f, 1f, -1f),
+                Vector3f(0f, 1f, 0f),
+                lookAt = Vector3f(0f, 1f, -1f),
                 resX = width,
                 resY = height,
             )
@@ -44,37 +40,39 @@ fun main() {
             ),
             PointLight(
                 ColorRGB.WHITE,
-                Vector3(-2f, 3f, -2f),
+                Vector3f(-2f, 3f, -2f),
                 0.5f
             ),
             DirectionalLight(
                 ColorRGB.WHITE,
-                Vector3(2f, -2f, -2f),
+                Vector3f(2f, -2f, -2f),
                 0.7f
             )
         ),
         shapes = mutableListOf(
+            Model.fromAssimp("/models/spider/spider.obj").apply {
+                position = Vector3f(0f, 1f, -3f)
+            },
             //Sphere(
-            //    Vector3(-3f, 1f, -3f),
+            //    Vector3f(-3f, 1f, -3f),
             //    1f,
             //    Material(
             //        ColorRGB.RED
             //    )
             //),
             //Sphere(
-            //    Vector3(0f, 1f, -3f),
+            //    Vector3f(0f, 1f, -3f),
             //    1f,
             //    Material(
             //        ColorRGB.GREEN,
-            //        texture=Texture.fromImageFile("/textures/numbered-checker.png"),
+            //        texture= Texture.fromImageFile("/textures/numbered-checker.png"),
             //        //shininess=0f
             //    ),
-            //    up = Vector3.UNIT_Y,
-            //    right = Vector3.UNIT_X
+            //    up = Vector3f(0f, 1f, 0f),
+            //    right = Vector3f(1f, 0f, 0f)
             //),
-            Model.fromAssimp("/models/spider/spider.obj"),
             //Sphere(
-            //    Vector3(3f, 1f, -3f),
+            //    Vector3f(3f, 1f, -3f),
             //    1f,
             //    Material(
             //        ColorRGB.BLUE
@@ -82,34 +80,34 @@ fun main() {
             //),
             //Triangle(
             //    Vertex(
-            //        Vector3(-3f, 3f, -3f),
-            //        Vector3.UNIT_Z,
-            //        Vector2(0f, 0f),
+            //        Vector3f(-3f, 3f, -3f),
+            //        Vector3f(0f, 0f, 1f),
+            //        Vector2f(0f, 0f),
             //    ),
             //    Vertex(
-            //        Vector3(3f, 3f, -3f),
-            //        Vector3.UNIT_Z,
-            //        Vector2(1f, 0f),
+            //        Vector3f(3f, 3f, -3f),
+            //        Vector3f(0f, 0f, 1f),
+            //        Vector2f(1f, 0f),
             //    ),
             //    Vertex(
-            //        Vector3(0f, 4f, -3f),
-            //        Vector3.UNIT_Z,
-            //        Vector2(.5f, 1f),
+            //        Vector3f(0f, 4f, -3f),
+            //        Vector3f(0f, 0f, 1f),
+            //        Vector2f(.5f, 1f),
             //    ),
             //    Material(
-            //        texture=Texture.fromImageFile("/textures/numbered-checker.png")
+            //        texture = Texture.fromImageFile("/textures/numbered-checker.png")
             //    ),
             //),
             //Plane(
-            //    Vector3(-.5f, 0f, -3f),
-            //    Vector3.UNIT_Y,
+            //    Vector3f(-.5f, 0f, -3f),
+            //    Vector3f(0f, 1f, 0f),
             //    Material(
             //        ColorRGB.GREY,
-            //        texture= Texture.fromImageFile("/textures/cement-1.png"),
-            //        uvScale = Vector2(5f, 5f),
+            //        texture = Texture.fromImageFile("/textures/cement-1.png"),
+            //        uvScale = Vector2f(5f, 5f),
             //        wrapMode = WrapMode.MIRROR,
             //    ),
-            //    Vector3.UNIT_X
+            //    Vector3f(1f, 0f, 0f)
             //)
         ),
     )

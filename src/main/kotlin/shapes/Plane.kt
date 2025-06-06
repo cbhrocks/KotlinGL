@@ -1,39 +1,40 @@
 package org.kotlingl.shapes
 
+import org.joml.Vector2f
+import org.joml.Vector3f
+import org.joml.minus
+import org.joml.plus
+import org.joml.times
 import org.kotlingl.entity.Intersection
 import org.kotlingl.entity.Material
 import org.kotlingl.math.*
 import kotlin.math.abs
 
 class Plane(
-    var position: Vector3,
-    var normal: Vector3,
+    var position: Vector3f,
+    var normal: Vector3f,
     val material: Material,
-    tangent: Vector3? = null
+    tangent: Vector3f? = null
 ) : Shape {
-    var tangent: Vector3
+    var tangent: Vector3f = tangent ?: if (abs(normal.y) < 0.99f)
+        Vector3f(0f, 1f, 0f).cross(normal).normalize()
+    else
+        Vector3f(1f, 0f, 0f).cross(normal).normalize()
 
-    init {
-        this.tangent = tangent ?: if (abs(normal.y) < 0.99f)
-            Vector3(0f, 1f, 0f).cross(normal).normalize()
-        else
-            Vector3(1f, 0f, 0f).cross(normal).normalize()
-    }
-
-    private fun getUVIntersect(hitPoint: Vector3, origin: Vector3, tangent: Vector3, normal: Vector3): Vector2 {
-        val bitangent = normal.cross(tangent).normalize()
+    private fun getUVIntersect(hitPoint: Vector3f, origin: Vector3f, tangent: Vector3f, normal: Vector3f): Vector2f {
+        val bitangent = normal.cross(tangent, Vector3f()).normalize()
         val local = hitPoint - origin
         val rawU = local.dot(tangent)
         val rawV = local.dot(bitangent)
         // the addition moves the material to be centered on the origin of the plane.
         val scaledU = (rawU / material.uvScale.x) + 0.5f
         val scaledV = (rawV / material.uvScale.y) + 0.5f
-        val wrappedUV = material.getWrappedUV(Vector2(scaledU, scaledV))
+        val wrappedUV = material.getWrappedUV(Vector2f(scaledU, scaledV))
         return wrappedUV
     }
 
     override fun intersects(ray: Ray): Intersection? {
-        val denom = ray.direction dot this.normal
+        val denom = ray.direction.dot(this.normal)
 
         // Ray is parallel to the plane
         if (abs(denom) < 1e-6f) return null

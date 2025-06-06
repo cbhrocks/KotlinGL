@@ -1,5 +1,11 @@
 package org.kotlingl.shapes
 
+import org.joml.Vector2f
+import org.joml.Vector3f
+import org.joml.Vector3fc
+import org.joml.minus
+import org.joml.plus
+import org.joml.times
 import org.kotlingl.entity.Intersection
 import org.kotlingl.entity.Material
 import org.kotlingl.math.*
@@ -8,21 +14,21 @@ import kotlin.math.atan2
 import kotlin.math.sqrt
 
 class Sphere(
-    val center: Vector3 = Vector3(0f,0f,0f),
+    val center: Vector3f = Vector3f(0f, 0f, 0f),
     val radius: Float = 1f,
     val material: Material,
-    val up: Vector3 = Vector3.UNIT_Y,
-    val right: Vector3 = Vector3.UNIT_X
+    val up: Vector3f = Vector3f(0f, 1f, 0f),
+    val right: Vector3f = Vector3f(1f, 0f, 0f),
 ): Shape {
 
     init {
-        require(up dot right == 0f) { "Up and Right vectors must equal 0" }
+        require(up.dot(right) == 0f) { "Up and Right vectors must equal 0" }
     }
 
-    private fun getUVIntersect(hitPoint: Vector3): Vector2 {
+    private fun getUVIntersect(hitPoint: Vector3fc): Vector2f {
         val local = (hitPoint - center).normalize()
 
-        val forward = up.cross(right).normalize() // local "forward" vector (orthogonal to up & right)
+        val forward = up.cross(right, Vector3f()).normalize() // local "forward" vector (orthogonal to up & right)
 
         // Project local point into the new basis
         val x = local.dot(right.normalize())
@@ -32,14 +38,14 @@ class Sphere(
         val u = 0.5f + atan2(z, x) / (2f * Math.PI.toFloat())
         val v = 0.5f + asin(y) / Math.PI.toFloat()
 
-        return Vector2(u, v)
+        return Vector2f(u, v)
     }
 
     override fun intersects(ray: Ray): Intersection? {
         val oc = ray.origin - this.center
-        val a = ray.direction dot ray.direction
-        val b = 2f * (oc dot ray.direction)
-        val c = (oc dot oc) - this.radius * this.radius
+        val a = ray.direction.dot(ray.direction)
+        val b = 2f * oc.dot(ray.direction)
+        val c = oc.dot(oc) - this.radius * this.radius
 
         val discriminant = b * b - 4f * a * c
 

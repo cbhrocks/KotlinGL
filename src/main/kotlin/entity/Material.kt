@@ -1,6 +1,7 @@
 package org.kotlingl.entity
 
 import org.joml.Vector2f
+import org.joml.Vector2fc
 
 
 enum class WrapMode {
@@ -18,24 +19,24 @@ data class Material(
     val wrapMode: WrapMode = WrapMode.REPEAT
 ) {
 
-    fun getWrappedUV(uvCoords: Vector2f): Vector2f {
+    fun getWrappedUV(uvCoords: Vector2fc): Vector2f {
         return when (wrapMode) {
             WrapMode.REPEAT -> Vector2f(
-                (uvCoords.x % 1f + 1f) % 1f,
-                (uvCoords.y % 1f + 1f) % 1f
+                (uvCoords.x() % 1f + 1f) % 1f,
+                (uvCoords.y() % 1f + 1f) % 1f
             );
             WrapMode.MIRROR -> {
-                val flooredU = kotlin.math.floor(uvCoords.x)
-                val flooredV = kotlin.math.floor(uvCoords.y)
-                val fracU = uvCoords.x - flooredU
-                val fracV = uvCoords.y - flooredV
+                val flooredU = kotlin.math.floor(uvCoords.x())
+                val flooredV = kotlin.math.floor(uvCoords.y())
+                val fracU = uvCoords.x() - flooredU
+                val fracV = uvCoords.y() - flooredV
                 val u = if (flooredU.toInt() % 2 == 0) fracU else 1f - fracU
                 val v = if (flooredV.toInt() % 2 == 0) fracV else 1f - fracV
                 Vector2f(u,v)
             }
             WrapMode.CLAMP -> Vector2f(
-                uvCoords.x.coerceIn(0f, 1f),
-                uvCoords.y.coerceIn(0f, 1f),
+                uvCoords.x().coerceIn(0f, 1f),
+                uvCoords.y().coerceIn(0f, 1f),
             )
         }
     }

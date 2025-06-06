@@ -1,6 +1,12 @@
 package org.kotlingl.lighting
 
+import org.joml.Vector2f
 import org.joml.Vector3f
+import org.joml.Vector3fc
+import org.joml.minus
+import org.joml.plus
+import org.joml.times
+import org.joml.unaryMinus
 import org.kotlingl.entity.Intersection
 import org.kotlingl.Scene
 import org.kotlingl.entity.ColorRGB
@@ -40,7 +46,7 @@ class DiffuseStage : ShadingStage {
             val lightDir = light.getDirection(hit.point)
 
             //backfacing rejection
-            val nDotL = hit.normal dot lightDir
+            val nDotL = hit.normal.dot(lightDir)
             // if the surface facing the light
             val facesLight = nDotL > 0
             if (!facesLight) {
@@ -59,18 +65,18 @@ class DiffuseStage : ShadingStage {
 
             val intensity = light.computeIntensity(hit, lightDir)
 
-            val color = hit.material.texture?.sample(hit.uv ?: Vector2(0f, 0f))
+            val color = hit.material.texture?.sample(hit.uv ?: Vector2f(0f, 0f))
                 ?: hit.material.color
 
-            acc + color.toVector3() * intensity
+            acc + color.toVector3f() * intensity
         }
     }
 }
 
 class SpecularStage : ShadingStage {
-    override fun shade(hit: Intersection, scene: Scene, bounce: Int): Vector3 {
+    override fun shade(hit: Intersection, scene: Scene, bounce: Int): Vector3f {
         // Simple Phong specular model (placeholder)
-        return scene.lights.fold (Vector3(0f, 0f, 0f)) { acc, light ->
+        return scene.lights.fold (Vector3f(0f, 0f, 0f)) { acc, light ->
             val lightDir = light.getDirection(hit.point)
 
             if (light.contributesToShadows) {
@@ -90,7 +96,7 @@ class SpecularStage : ShadingStage {
         }
     }
 
-    private fun reflect(dir: Vector3, normal: Vector3): Vector3 {
+    private fun reflect(dir: Vector3f, normal: Vector3fc): Vector3f {
         return dir - normal * 2f * dir.dot(normal)
     }
 }

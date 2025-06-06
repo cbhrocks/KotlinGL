@@ -1,5 +1,9 @@
 package org.kotlingl.shapes
 
+import org.joml.Vector3f
+import org.joml.minus
+import org.joml.plus
+import org.joml.times
 import org.kotlingl.entity.Intersection
 import org.kotlingl.entity.Material
 import org.kotlingl.math.*
@@ -13,14 +17,14 @@ class Triangle (
     val material: Material,
 ) : Shape {
 
-    private var faceNormal: Vector3 = (v1.position - v0.position).cross(v2.position - v0.position).normalize()
+    private var faceNormal: Vector3f = (v1.position - v0.position).cross(v2.position - v0.position).normalize()
 
     // Möller–Trumbore Triangle-Ray Intersection
     override fun intersects(ray: Ray): Intersection? {
         val edge1 = v1.position - v0.position
         val edge2 = v2.position - v0.position
-        val h = ray.direction cross edge2
-        val a = edge1 dot h
+        val h = ray.direction.cross(edge2, Vector3f())
+        val a = edge1.dot(h)
 
         // Ray is parallel to triangle
         if (a > -EPSILON && a < EPSILON) {
@@ -35,7 +39,7 @@ class Triangle (
             return null
         }
 
-        val q = s cross edge1
+        val q = s.cross(edge1)
         val v = f * ray.direction.dot(q)
 
         if (v < 0.0f || u + v > 1.0f) {
@@ -56,7 +60,7 @@ class Triangle (
                 faceNormal,
                 t,
                 material,
-                faceNormal dot (ray.origin + ray.direction) > 0f,
+                faceNormal.dot(ray.origin + ray.direction) > 0f,
                 uv
             )
         } else null // Ray intersection, return distance t

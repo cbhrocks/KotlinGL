@@ -1,10 +1,5 @@
 package org.kotlingl
 
-import org.kotlingl.entity.ColorRGB
-import org.kotlingl.math.Vector3
-import org.kotlingl.shapes.Ray
-import org.kotlingl.shapes.Shape
-import org.kotlingl.Scene
 import org.lwjgl.Version
 import org.lwjgl.glfw.Callbacks
 import org.lwjgl.glfw.GLFW

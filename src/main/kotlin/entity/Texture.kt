@@ -1,15 +1,16 @@
 package org.kotlingl.entity
 
 import org.joml.Vector2f
+import org.joml.Vector2fc
 import java.awt.image.BufferedImage
 import javax.imageio.ImageIO
 
 class Texture(private val image: BufferedImage) {
 
-    fun sample(uv: Vector2f): ColorRGB {
+    fun sample(uv: Vector2fc): ColorRGB {
         // Clamp or wrap UVs between 0 and 1
-        val u = (uv.x % 1.0f + 1.0f) % 1.0f
-        val v = (uv.y % 1.0f + 1.0f) % 1.0f
+        val u = (uv.x() % 1.0f + 1.0f) % 1.0f
+        val v = (uv.y() % 1.0f + 1.0f) % 1.0f
 
         val x = (u * image.width).toInt().coerceIn(0, image.width - 1)
         val y = ((1-v) * image.height).toInt().coerceIn(0, image.height - 1)

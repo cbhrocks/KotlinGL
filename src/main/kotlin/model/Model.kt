@@ -2,6 +2,7 @@ package org.kotlingl.model
 
 import org.joml.Matrix4f
 import org.joml.Quaternionf
+import org.joml.Vector2f
 import org.kotlingl.entity.ColorRGB
 import org.kotlingl.entity.Intersection
 import org.kotlingl.entity.Material
@@ -11,10 +12,8 @@ import org.kotlingl.shapes.Triangle
 import org.lwjgl.assimp.AIColor4D
 import org.lwjgl.assimp.AIMaterial
 import org.lwjgl.assimp.AIMesh
-import org.lwjgl.assimp.AIScene
 import org.lwjgl.assimp.Assimp
 import java.io.File
-import javax.swing.text.Position
 
 import org.joml.Vector3f
 
@@ -22,21 +21,47 @@ class Model(
     val meshes: List<Mesh>,
     val materials: List<Material>,
     val bones: List<Bone> = listOf(),
-    var position: Vector3f = Vector3f(0f,0f,0f),
-    var rotation: Quaternionf = Quaternionf(),
-    var scale: Vector3f = Vector3f(0f, 0f, 0f)
+    var initialPosition: Vector3f = Vector3f(0f,0f,0f),
+    var initialRotation: Quaternionf = Quaternionf(),
+    var initialScale: Vector3f = Vector3f(0f, 0f, 0f)
 ) : Shape {
     var meshTriangles = HashMap<Int, List<Triangle>>()
 
-    val transform: Matrix4f
-        get() = Matrix4f.translation(position) *
-                Matrix4f.rotation(rotation) *
-                Matrix4f.scale(scale)
+    private lateinit var transform: Matrix4f
+    private lateinit var transformInverse: Matrix4f
+
+    var position: Vector3f = initialPosition
+        set(value) {
+            field = value
+            createTransforms()
+        }
+    var rotation: Quaternionf = initialRotation
+        set(value) {
+            field = value
+            createTransforms()
+        }
+    var scale: Vector3f = initialScale
+        set(value) {
+            field = value
+            createTransforms()
+        }
+
+    private fun createTransforms() {
+        this.transform = Matrix4f().translation(position)
+            .rotation(rotation)
+            .scale(scale)
+        this.transformInverse = Matrix4f(this.transform).invert()
+    }
+
+    init {
+        createTransforms()
+    }
+
 
     override fun intersects(ray: Ray): Intersection? {
         var closestHit: Intersection? = null
 
-        val localRay = ray.transformedBy(transform.inverse())
+        val localRay = ray.transformedBy(transformInverse)
 
         val localHit = meshes.mapIndexedNotNull { i, it ->
             this.meshTriangles.getOrPut(i) { it.getTriangles(materials[it.materialIndex]) }
@@ -44,7 +69,20 @@ class Model(
                 .minByOrNull { it.t }
         }.minByOrNull { it.t } ?: return null
 
-        return localHit.transformedBy(transform)
+        return if (localHit != null) {
+            val hitPointWorld = transform.transformPosition(localHit.point, Vector3f())
+            Intersection(
+                hitPointWorld,
+                transform.transformDirection(localHit.normal, Vector3f()).normalize(),
+                localHit.t,
+                localHit.material,
+                localHit.frontFace,
+                localHit.uv
+            )
+        } else null
+        //return localHit.apply { point.mulPosition(transform) }
+
+        //return localHit.transformedBy(transform)
     }
 
     /* for when rasterization is implemented
@@ -93,21 +131,21 @@ class Model(
 
                 for (j in 0 until aiMesh.mNumVertices()) {
                     val aiPos = aiMesh.mVertices()[j]
-                    val position = Vector3(aiPos.x(), aiPos.y(), aiPos.z())
+                    val position = Vector3f(aiPos.x(), aiPos.y(), aiPos.z())
 
                     val aiNorm = aiMesh.mNormals()?.get(j)
                     if (aiNorm == null) {
                         throw RuntimeException("no normal found")
                     }
-                    val normal = Vector3(aiNorm.x(), aiNorm.y(), aiNorm.z())
+                    val normal = Vector3f(aiNorm.x(), aiNorm.y(), aiNorm.z())
 
                     val texCoords = aiMesh.mTextureCoords(0)
-                    val uv: Vector2
+                    val uv: Vector2f
                     if (texCoords != null) {
                         val aiUV = texCoords[j]
-                        uv = Vector2(aiUV.x(), aiUV.y())
+                        uv = Vector2f(aiUV.x(), aiUV.y())
                     } else {
-                        uv = Vector2(0f, 0f)
+                        uv = Vector2f(0f, 0f)
                     }
                     vertices += Vertex(
                         position,

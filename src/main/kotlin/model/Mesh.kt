@@ -1,14 +1,14 @@
 package org.kotlingl.model
 
+import org.joml.Vector2fc
+import org.joml.Vector3f
 import org.kotlingl.entity.Material
-import org.kotlingl.math.Vector2
-import org.kotlingl.math.Vector3
 import org.kotlingl.shapes.Triangle
 
 data class Vertex (
-    val position: Vector3,
-    val normal: Vector3,
-    val uv: Vector2,
+    val position: Vector3f,
+    val normal: Vector3f,
+    val uv: Vector2fc,
 )
 
 class Mesh(
