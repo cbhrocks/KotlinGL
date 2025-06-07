@@ -1,6 +1,5 @@
 package org.kotlingl.entity
 
-import org.joml.Vector2f
 import org.joml.Vector2fc
 import java.awt.image.BufferedImage
 import javax.imageio.ImageIO
@@ -20,7 +19,8 @@ class Texture(private val image: BufferedImage) {
     }
 
     companion object {
-        fun fromImageFile(path: String): Texture {
+
+        fun fromImageResource(path: String): Texture {
             val stream = object {}.javaClass.getResourceAsStream(path)
                 ?: throw IllegalArgumentException("Resource not found: $path")
             val bImage = ImageIO.read(stream) ?: throw IllegalArgumentException("Could not read image: $path")

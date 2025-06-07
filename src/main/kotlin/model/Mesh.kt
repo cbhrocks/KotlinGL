@@ -14,7 +14,7 @@ data class Vertex (
 class Mesh(
     val vertices: List<Vertex>,
     val indices: List<Int>,
-    val materialIndex: Int
+    val material: Material
 ) {
 
     init {
@@ -23,7 +23,7 @@ class Mesh(
         }
     }
 
-    fun getTriangles(material: Material): List<Triangle> {
+    fun getTriangles(): List<Triangle> {
         return indices.chunked(3).map({ (i0, i1, i2) ->
             Triangle(
                 vertices[i0],

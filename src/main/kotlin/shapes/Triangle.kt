@@ -65,4 +65,18 @@ class Triangle (
             )
         } else null // Ray intersection, return distance t
     }
+
+    fun computeAABB(): AABB {
+        val min = Vector3f(
+            minOf(v0.position.x, v1.position.x, v2.position.x),
+            minOf(v0.position.y, v1.position.y, v2.position.y),
+            minOf(v0.position.z, v1.position.z, v2.position.z)
+        )
+        val max = Vector3f(
+            maxOf(v0.position.x, v1.position.x, v2.position.x),
+            maxOf(v0.position.y, v1.position.y, v2.position.y),
+            maxOf(v0.position.z, v1.position.z, v2.position.z)
+        )
+        return AABB(min, max)
+    }
 }

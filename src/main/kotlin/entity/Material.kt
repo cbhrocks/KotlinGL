@@ -2,6 +2,16 @@ package org.kotlingl.entity
 
 import org.joml.Vector2f
 import org.joml.Vector2fc
+import org.joml.Vector3f
+import org.lwjgl.assimp.AIColor4D
+import org.lwjgl.assimp.AIMaterial
+import org.lwjgl.assimp.AIString
+import org.lwjgl.assimp.Assimp
+import org.lwjgl.assimp.Assimp.aiGetMaterialTexture
+import org.lwjgl.assimp.Assimp.aiTextureType_DIFFUSE
+import java.nio.FloatBuffer
+import java.nio.IntBuffer
+import java.nio.file.Paths
 
 
 enum class WrapMode {

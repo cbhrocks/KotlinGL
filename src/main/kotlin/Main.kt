@@ -1,5 +1,6 @@
 package org.kotlingl
 
+import org.joml.Quaternionf
 import org.joml.Vector2f
 import org.joml.Vector3f
 import org.kotlingl.entity.ColorRGB
@@ -13,6 +14,7 @@ import org.kotlingl.model.Vertex
 import org.kotlingl.shapes.Plane
 import org.kotlingl.shapes.Sphere
 import org.kotlingl.shapes.Triangle
+import kotlin.math.PI
 
 fun main() {
     val width = 480
@@ -27,8 +29,10 @@ fun main() {
             .build(),
         cameras = mutableListOf(
             Camera(
-                Vector3f(0f, 1f, 0f),
-                lookAt = Vector3f(0f, 1f, -1f),
+                // Vector3f(-1f, 1f, 120f),
+                // lookAt = Vector3f(0f, 0f, 0f),
+                Vector3f(-0f, 1f, 3f),
+                lookAt = Vector3f(0f, 0f, 0f),
                 resX = width,
                 resY = height,
             )
@@ -51,8 +55,18 @@ fun main() {
         ),
         shapes = mutableListOf(
             Model.fromAssimp("/models/spider/spider.obj").apply {
-                position = Vector3f(0f, 1f, -3f)
+                transform(
+                    rotation = Quaternionf().rotateY(PI.toFloat()/2f),
+                    scale = Vector3f(.02f, .02f, .02f)
+                )
             },
+            //Model.fromAssimp("/models/box/box.obj").apply {
+            //    transform(
+            //        Vector3f(0f, 1f, -3f),
+            //        //Quaternionf().rotateY(PI.toFloat()),
+            //        //scale= Vector3f(.2f, .2f, .2f)
+            //    )
+            //},
             //Sphere(
             //    Vector3f(-3f, 1f, -3f),
             //    1f,
@@ -103,7 +117,7 @@ fun main() {
             //    Vector3f(0f, 1f, 0f),
             //    Material(
             //        ColorRGB.GREY,
-            //        texture = Texture.fromImageFile("/textures/cement-1.png"),
+            //        texture = Texture.fromImageResource("/textures/cement-1.png"),
             //        uvScale = Vector2f(5f, 5f),
             //        wrapMode = WrapMode.MIRROR,
             //    ),
