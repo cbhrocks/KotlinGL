@@ -1,9 +1,6 @@
 package org.kotlingl.shapes
 
-import org.joml.Vector3f
-import org.joml.minus
-import org.joml.plus
-import org.joml.times
+import org.joml.*
 import org.kotlingl.entity.Intersection
 import org.kotlingl.entity.Material
 import org.kotlingl.math.*
@@ -78,5 +75,9 @@ class Triangle (
             maxOf(v0.position.z, v1.position.z, v2.position.z)
         )
         return AABB(min, max)
+    }
+
+    fun centroid(): Vector3f {
+        return (v0.position + v1.position + v2.position)/3f
     }
 }

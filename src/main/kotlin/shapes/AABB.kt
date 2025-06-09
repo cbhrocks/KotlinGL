@@ -31,6 +31,16 @@ data class AABB(val min: Vector3f, val max: Vector3f) {
         return true
     }
 
+    fun largestAxis(): Int {
+        // extent means size
+        val extent = max.sub(min, Vector3f())  // extent = max - min
+        return when {
+            extent.x >= extent.y && extent.x >= extent.z -> 0
+            extent.y >= extent.z -> 1
+            else -> 2
+        }
+    }
+
     companion object {
         // this is for creating a box that contains other boxes
         fun surroundingBox(box0: AABB, box1: AABB): AABB {

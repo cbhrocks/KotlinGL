@@ -70,16 +70,11 @@ class Model(
 
     override fun intersects(ray: Ray): Intersection? {
         val localRay = ray.transformedBy(modelMInverse)
-        //val localRay = ray//.transformedBy(modelMInverse)
 
-        val localHit = (meshes.mapIndexedNotNull { i, it ->
-            this.meshTriangles.getOrPut(i) { it.getTriangles() }
-                .mapNotNull { it2 -> it2.intersects(localRay) }
-                .minByOrNull { it2 -> it2.t }
+        val localHit = (meshes.mapNotNull {
+            it.intersects(ray)
         } + children.mapNotNull { it.intersects(localRay) })
             .minByOrNull { it.t }
-
-        //return localHit
 
         return localHit?.let {
             val hitPointWorld = modelM.transformPosition(localHit.point, Vector3f())
@@ -95,9 +90,6 @@ class Model(
                 localHit.uv
             )
         }
-        //return localHit.apply { point.mulPosition(transform) }
-
-        //return localHit.transformedBy(transform)
     }
 
     /* for when rasterization is implemented
@@ -143,7 +135,7 @@ class Model(
                     mapmode,
                     flags
                 ) == 0) {
-                val texturePath = pathBuffer.dataString()
+                val texturePath = pathBuffer.dataString().replace("\\", "/")
                 val fullPath = "/" + modelDirectory.resolve(texturePath).normalize().joinToString("/")
 
                 texture = Texture.fromImageResource(fullPath) // Your own Texture loader
