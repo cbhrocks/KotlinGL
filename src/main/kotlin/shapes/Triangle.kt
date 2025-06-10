@@ -4,6 +4,7 @@ import org.joml.*
 import org.kotlingl.entity.Intersection
 import org.kotlingl.entity.Material
 import org.kotlingl.math.*
+import org.kotlingl.model.BVHNode
 import org.kotlingl.model.Vertex
 
 // use winding order same as opengl. counter-clockwise for front face, clockwise for backface
@@ -12,7 +13,7 @@ class Triangle (
     val v1: Vertex,
     val v2: Vertex,
     val material: Material,
-) : Shape {
+) : Bounded {
 
     private var faceNormal: Vector3f = (v1.position - v0.position).cross(v2.position - v0.position).normalize()
 
@@ -63,7 +64,7 @@ class Triangle (
         } else null // Ray intersection, return distance t
     }
 
-    fun computeAABB(): AABB {
+    override fun computeAABB(): AABB {
         val min = Vector3f(
             minOf(v0.position.x, v1.position.x, v2.position.x),
             minOf(v0.position.y, v1.position.y, v2.position.y),
@@ -77,7 +78,13 @@ class Triangle (
         return AABB(min, max)
     }
 
-    fun centroid(): Vector3f {
+    override fun centroid(): Vector3f {
         return (v0.position + v1.position + v2.position)/3f
+    }
+
+    override fun getBVHNode(): BVHNode {
+        return BVHNode(
+            this.computeAABB()
+        )
     }
 }

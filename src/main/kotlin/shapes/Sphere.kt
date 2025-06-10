@@ -8,7 +8,6 @@ import org.joml.plus
 import org.joml.times
 import org.kotlingl.entity.Intersection
 import org.kotlingl.entity.Material
-import org.kotlingl.math.*
 import kotlin.math.asin
 import kotlin.math.atan2
 import kotlin.math.sqrt
@@ -19,7 +18,7 @@ class Sphere(
     val material: Material,
     val up: Vector3f = Vector3f(0f, 1f, 0f),
     val right: Vector3f = Vector3f(1f, 0f, 0f),
-): Shape {
+): Intersectable {
 
     init {
         require(up.dot(right) == 0f) { "Up and Right vectors must equal 0" }

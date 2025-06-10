@@ -5,13 +5,13 @@ import org.kotlingl.entity.Intersection
 import org.kotlingl.lighting.Shader
 import org.kotlingl.lights.Light
 import org.kotlingl.shapes.Ray
-import org.kotlingl.shapes.Shape
+import org.kotlingl.shapes.Intersectable
 
 data class Scene(
     var shader: Shader,
     var cameras: MutableList<Camera> = mutableListOf<Camera>(Camera()),
     var lights: MutableList<Light> = mutableListOf<Light>(),
-    var shapes: MutableList<Shape> = mutableListOf<Shape>(),
+    var shapes: MutableList<Intersectable> = mutableListOf<Intersectable>(),
     var activeCameraIndex: Int = 0
 ) {
     val activeCamera

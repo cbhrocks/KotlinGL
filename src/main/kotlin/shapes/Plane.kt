@@ -7,7 +7,6 @@ import org.joml.plus
 import org.joml.times
 import org.kotlingl.entity.Intersection
 import org.kotlingl.entity.Material
-import org.kotlingl.math.*
 import kotlin.math.abs
 
 class Plane(
@@ -15,7 +14,7 @@ class Plane(
     var normal: Vector3f,
     val material: Material,
     tangent: Vector3f? = null
-) : Shape {
+) : Intersectable {
     var tangent: Vector3f = tangent ?: if (abs(normal.y) < 0.99f)
         Vector3f(0f, 1f, 0f).cross(normal).normalize()
     else

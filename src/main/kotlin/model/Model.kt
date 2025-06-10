@@ -6,17 +6,18 @@ import org.joml.Vector2f
 import org.kotlingl.entity.Intersection
 import org.kotlingl.entity.Material
 import org.kotlingl.shapes.Ray
-import org.kotlingl.shapes.Shape
 import org.kotlingl.shapes.Triangle
 import org.lwjgl.assimp.AIColor4D
 import org.lwjgl.assimp.AIMaterial
 import org.lwjgl.assimp.AIMesh
-import java.io.File
 
 import org.joml.Vector3f
 import org.kotlingl.entity.Texture
 import org.kotlingl.entity.toColor
 import org.kotlingl.math.toJoml
+import org.kotlingl.shapes.AABB
+import org.kotlingl.shapes.Bounded
+import org.lwjgl.assimp.AIBone
 import org.lwjgl.assimp.AINode
 import org.lwjgl.assimp.AIScene
 import org.lwjgl.assimp.AIString
@@ -24,23 +25,25 @@ import org.lwjgl.assimp.Assimp.*
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
 import java.nio.file.Path
-import java.nio.file.Paths
 import kotlin.io.path.Path
 import kotlin.io.path.absolute
 import kotlin.io.path.toPath
 
 class Model(
     val meshes: List<Mesh>,
-    val bones: List<Bone> = listOf(),
     private var position: Vector3f = Vector3f(0f,0f,0f),
     private var rotation: Quaternionf = Quaternionf(),
-    private var scale: Vector3f = Vector3f(1f, 1f, 1f)
-) : Shape {
-    var meshTriangles = HashMap<Int, List<Triangle>>()
-
+    private var scale: Vector3f = Vector3f(1f, 1f, 1f),
+    val bones: MutableList<Bone> = mutableListOf(),
+    val name: String? = null
+) : Bounded {
     private var modelM: Matrix4f = Matrix4f()
     private var modelMInverse: Matrix4f = Matrix4f()
     private var children: MutableList<Model> = mutableListOf()
+
+    val bvhNode: BVHNode by lazy {
+        BVHNode.fromBounded(this.meshes)
+    }
 
     fun transform(
         mat: Matrix4f
@@ -92,6 +95,22 @@ class Model(
         }
     }
 
+    override fun getBVHNode(): BVHNode {
+        return this.bvhNode
+    }
+
+    override fun computeAABB(): AABB {
+        return this.meshes.map { computeAABB() }.reduce { acc, curAABB -> AABB.surroundingBox(acc, curAABB) }
+    }
+
+    override fun centroid(): Vector3f {
+        val center = Vector3f()
+        for (mesh in meshes) {
+            center.add(mesh.centroid())
+        }
+        return center.div(meshes.size.toFloat())
+    }
+
     /* for when rasterization is implemented
     fun Model.draw(shader: Shader) {
         shader.setMatrix("model", transform)
@@ -106,10 +125,6 @@ class Model(
         fun loadMaterial(material: AIMaterial, modelDirectory: Path): Material {
             val color = AIColor4D.create()
             aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, aiTextureType_NONE, 0, color)
-
-            val r = color.r()
-            val g = color.g()
-            val b = color.b()
 
             // Check for diffuse texture
             val pathBuffer = AIString.calloc()
@@ -152,7 +167,7 @@ class Model(
             )
         }
 
-        fun loadMesh(aiMesh: AIMesh, transform: Matrix4f, material: Material): Mesh {
+        fun loadMesh(aiMesh: AIMesh, material: Material, boneMap: MutableMap<String, Bone>): Mesh {
             val vertices = mutableListOf<Vertex>()
             val indices = mutableListOf<Int>()
 
@@ -188,6 +203,20 @@ class Model(
                 }
             }
 
+            for (i in 0 until aiMesh.mNumBones()) {
+                val aiBone = AIBone.create(aiMesh.mBones()!![i])
+                val boneName = aiBone.mName().dataString()
+                val offsetMatrix = aiBone.mOffsetMatrix().toJoml()
+                val weights = mutableListOf<VertexWeight>()
+
+                for (j in 0 until aiBone.mNumWeights()) {
+                    val weight = aiBone.mWeights()!![j]
+                    weights.add(VertexWeight(weight.mVertexId(), weight.mWeight()))
+                }
+
+                boneMap[boneName] = Bone(boneName, offsetMatrix, weights)
+            }
+
             return Mesh(vertices, indices, material)
         }
 
@@ -195,9 +224,11 @@ class Model(
             directory: Path,
             scene: AIScene,
             node: AINode,
+            boneMap: MutableMap<String, Bone>,
             transform: Matrix4f = Matrix4f(),
             materials: List<Material>? = null
         ): Model {
+            val name = node.mName().dataString()
             val nodeTransform = node.mTransformation().toJoml().mul(transform)
 
             // load materials
@@ -217,18 +248,19 @@ class Model(
                 val materialIndex = aiMesh.mMaterialIndex()
                 val material = loadedMaterials[materialIndex]
 
-                meshes.add(loadMesh(aiMesh, transform, material))
+                meshes.add(loadMesh(aiMesh, material, boneMap))
             }
 
             // Create the model for this node
             val model = Model(
-                meshes = meshes
+                meshes = meshes,
+                name = name
             ).apply { transform(nodeTransform) }
 
             // Recursively load children
             for (i in 0 until node.mNumChildren()) {
                 val childNode = AINode.create(node.mChildren()!![i])
-                val childModel = loadModel(directory, scene, childNode, nodeTransform)
+                val childModel = loadModel(directory, scene, childNode, boneMap, nodeTransform)
                 model.addChild(childModel)
             }
 
@@ -247,7 +279,8 @@ class Model(
             val directory = Path(resourcePath).parent
 
             val rootNode = scene.mRootNode() ?: throw RuntimeException( "failed to load model from scene." )
-            val model = loadModel(directory, scene, rootNode)
+            val boneMap: MutableMap<String, Bone> = mutableMapOf()
+            val model = loadModel(directory, scene, rootNode, boneMap)
 
             aiReleaseImport(scene)
             return model
