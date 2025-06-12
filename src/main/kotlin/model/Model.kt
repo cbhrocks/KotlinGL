@@ -203,6 +203,7 @@ class Model(
                 }
             }
 
+            val meshBones: MutableList<Bone> = mutableListOf()
             for (i in 0 until aiMesh.mNumBones()) {
                 val aiBone = AIBone.create(aiMesh.mBones()!![i])
                 val boneName = aiBone.mName().dataString()
@@ -214,10 +215,16 @@ class Model(
                     weights.add(VertexWeight(weight.mVertexId(), weight.mWeight()))
                 }
 
-                boneMap[boneName] = Bone(boneName, offsetMatrix, weights)
+                val bone = Bone(boneName, offsetMatrix, weights)
+                val boneNode = BoneNode(
+                    boneName,
+
+                )
+                boneMap[boneName] = bone
+                meshBones.add(bone)
             }
 
-            return Mesh(vertices, indices, material)
+            return Mesh(vertices, indices, material, meshBones)
         }
 
         fun loadModel(
@@ -230,6 +237,12 @@ class Model(
         ): Model {
             val name = node.mName().dataString()
             val nodeTransform = node.mTransformation().toJoml().mul(transform)
+
+            // add bone node
+            val boneNode = BoneNode(
+                name,
+
+            )
 
             // load materials
             val loadedMaterials = materials ?: List(scene.mNumMaterials()) { i ->

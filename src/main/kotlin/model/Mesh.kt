@@ -21,7 +21,8 @@ data class Vertex (
 class Mesh(
     val vertices: List<Vertex>,
     val indices: List<Int>,
-    val material: Material
+    val material: Material,
+    val bones: List<Bone>
 ): Bounded {
     val bvhNode: BVHNode by lazy {
         BVHNode.fromBounded(this.triangles)

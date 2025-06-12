@@ -7,6 +7,9 @@ data class VertexWeight(
     val weight: Float
 )
 
+/**
+ * @property name used to link the Bone object to the BoneNode stored at the Model level
+ */
 data class Bone (
     val name: String,
     val offsetMatrix: Matrix4f, // Inverse bind pose. tranforms from mesh space -> bone space
