@@ -218,7 +218,6 @@ class Model(
                 val bone = Bone(boneName, offsetMatrix, weights)
                 val boneNode = BoneNode(
                     boneName,
-
                 )
                 boneMap[boneName] = bone
                 meshBones.add(bone)
