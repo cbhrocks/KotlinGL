@@ -30,16 +30,16 @@ import kotlin.io.path.absolute
 import kotlin.io.path.toPath
 
 class Model(
+    val name: String,
     val meshes: List<Mesh>,
-    private var position: Vector3f = Vector3f(0f,0f,0f),
-    private var rotation: Quaternionf = Quaternionf(),
-    private var scale: Vector3f = Vector3f(1f, 1f, 1f),
-    val bones: MutableList<Bone> = mutableListOf(),
-    val name: String? = null
+    val skeleton: BoneNode? = null,
+    var children: MutableList<Model> = mutableListOf()
 ) : Bounded {
     private var modelM: Matrix4f = Matrix4f()
     private var modelMInverse: Matrix4f = Matrix4f()
-    private var children: MutableList<Model> = mutableListOf()
+    private var position: Vector3f = Vector3f(0f,0f,0f)
+    private var rotation: Quaternionf = Quaternionf()
+    private var scale: Vector3f = Vector3f(1f, 1f, 1f)
 
     val bvhNode: BVHNode by lazy {
         BVHNode.fromBounded(this.meshes)
@@ -203,27 +203,7 @@ class Model(
                 }
             }
 
-            val meshBones: MutableList<Bone> = mutableListOf()
-            for (i in 0 until aiMesh.mNumBones()) {
-                val aiBone = AIBone.create(aiMesh.mBones()!![i])
-                val boneName = aiBone.mName().dataString()
-                val offsetMatrix = aiBone.mOffsetMatrix().toJoml()
-                val weights = mutableListOf<VertexWeight>()
-
-                for (j in 0 until aiBone.mNumWeights()) {
-                    val weight = aiBone.mWeights()!![j]
-                    weights.add(VertexWeight(weight.mVertexId(), weight.mWeight()))
-                }
-
-                val bone = Bone(boneName, offsetMatrix, weights)
-                val boneNode = BoneNode(
-                    boneName,
-                )
-                boneMap[boneName] = bone
-                meshBones.add(bone)
-            }
-
-            return Mesh(vertices, indices, material, meshBones)
+            return Mesh(vertices, indices, material)
         }
 
         fun loadModel(
@@ -236,12 +216,6 @@ class Model(
         ): Model {
             val name = node.mName().dataString()
             val nodeTransform = node.mTransformation().toJoml().mul(transform)
-
-            // add bone node
-            val boneNode = BoneNode(
-                name,
-
-            )
 
             // load materials
             val loadedMaterials = materials ?: List(scene.mNumMaterials()) { i ->

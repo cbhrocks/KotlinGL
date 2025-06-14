@@ -22,7 +22,7 @@ class Mesh(
     val vertices: List<Vertex>,
     val indices: List<Int>,
     val material: Material,
-    val bones: List<Bone>
+    val bones: List<Bone> = listOf()
 ): Bounded {
     val bvhNode: BVHNode by lazy {
         BVHNode.fromBounded(this.triangles)
