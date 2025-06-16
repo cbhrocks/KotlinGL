@@ -15,7 +15,7 @@ class AmbientLight(
         get() = false
 
     override fun getDirection(toPoint: Vector3fc): Vector3f {
-        return Vector3f()
+        return Vector3f(0f, 1f, 0f)
     }
 
     override fun computeIntensity(hit: Intersection, direction: Vector3fc): Vector3f {
@@ -23,6 +23,6 @@ class AmbientLight(
     }
 
     override fun getDistance(point: Vector3fc): Float {
-        return 0f
+        return 1f
     }
 }

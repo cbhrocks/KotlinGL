@@ -3,6 +3,7 @@ package org.kotlingl
 import org.joml.Quaternionf
 import org.joml.Vector2f
 import org.joml.Vector3f
+import org.joml.times
 import org.kotlingl.entity.ColorRGB
 import org.kotlingl.entity.Material
 import org.kotlingl.entity.Texture
@@ -10,6 +11,7 @@ import org.kotlingl.entity.WrapMode
 import org.kotlingl.lighting.*
 import org.kotlingl.lights.DirectionalLight
 import org.kotlingl.model.Model
+import org.kotlingl.model.ModelLoader
 import org.kotlingl.model.Vertex
 import org.kotlingl.shapes.Plane
 import org.kotlingl.shapes.Sphere
@@ -21,6 +23,21 @@ fun main() {
     //val width = 1920
     val height = 240
     //val height = 1080
+    val ml = ModelLoader()
+    ml.loadModel("/models/spider/spider.obj", "spider")
+    ml.loadModel("/models/box/box.obj", "box")
+    ml.loadModel("/models/blocky-characters/FBX format/character-a.fbx", "blocky-character-a")
+    val spider = ml.createModel("spider")
+    spider.transform(
+        rotation = Quaternionf().rotateY(PI.toFloat()/2f),
+        scale = Vector3f(.02f, .02f, .02f)
+    )
+    val box = ml.createModel("box")
+    val blockyChar = ml.createModel("blocky-character-a")
+    blockyChar.transform(
+        //scale = Vector3f(.03f, .03f, .03f)
+        rotation = Quaternionf().rotateY(PI.toFloat()/2f) * Quaternionf().rotateX(PI.toFloat()/2f),
+    )
 
     val scene = Scene(
         shader = Shader.Builder()
@@ -31,7 +48,8 @@ fun main() {
             Camera(
                 // Vector3f(-1f, 1f, 120f),
                 // lookAt = Vector3f(0f, 0f, 0f),
-                Vector3f(-0f, 1f, 3f),
+                //Vector3f(-0f, 50f, 200f),
+                Vector3f(0f, 1f, -2f),
                 lookAt = Vector3f(0f, 0f, 0f),
                 resX = width,
                 resY = height,
@@ -40,26 +58,23 @@ fun main() {
         lights = mutableListOf(
             AmbientLight(
                 ColorRGB.WHITE,
-                0.1f,
+                1.0f,
             ),
-            PointLight(
-                ColorRGB.WHITE,
-                Vector3f(-2f, 3f, -2f),
-                0.5f
-            ),
-            DirectionalLight(
-                ColorRGB.WHITE,
-                Vector3f(2f, -2f, -2f),
-                0.7f
-            )
+            //PointLight(
+            //    ColorRGB.WHITE,
+            //    Vector3f(-2f, 3f, -2f),
+            //    0.5f
+            //),
+            //DirectionalLight(
+            //    ColorRGB.WHITE,
+            //    Vector3f(2f, -2f, -2f),
+            //    0.7f
+            //)
         ),
         shapes = mutableListOf(
-            Model.fromAssimp("/models/spider/spider.obj").apply {
-                transform(
-                    rotation = Quaternionf().rotateY(PI.toFloat()/2f),
-                    scale = Vector3f(.02f, .02f, .02f)
-                )
-            },
+            spider,
+            //box,
+            //blockyChar,
             //Model.fromAssimp("/models/box/box.obj").apply {
             //    transform(
             //        Vector3f(0f, 1f, -3f),

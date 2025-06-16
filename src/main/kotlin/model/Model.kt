@@ -31,7 +31,7 @@ import kotlin.io.path.toPath
 
 class Model(
     val name: String,
-    val meshes: List<Mesh>,
+    val meshes: List<Bounded>,
     val skeleton: BoneNode? = null,
     var children: MutableList<Model> = mutableListOf()
 ) : Bounded {
@@ -111,6 +111,10 @@ class Model(
         return center.div(meshes.size.toFloat())
     }
 
+    fun allMeshes(): List<Bounded> {
+        return meshes + children.flatMap { it.allMeshes() }
+    }
+
     /* for when rasterization is implemented
     fun Model.draw(shader: Shader) {
         shader.setMatrix("model", transform)
@@ -120,157 +124,5 @@ class Model(
         children.forEach { it.draw(shader) }
     }
     */
-
-    companion object {
-        fun loadMaterial(material: AIMaterial, modelDirectory: Path): Material {
-            val color = AIColor4D.create()
-            aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, aiTextureType_NONE, 0, color)
-
-            // Check for diffuse texture
-            val pathBuffer = AIString.calloc()
-            var texture: Texture? = null
-
-            // Explicitly typed nulls
-            val mapping: IntBuffer? = null
-            val uvindex: IntBuffer? = null
-            val blend: FloatBuffer? = null
-            val op: IntBuffer? = null
-            val mapmode: IntBuffer? = null
-            val flags: IntBuffer? = null
-
-            if (aiGetMaterialTexture(
-                    material,
-                    aiTextureType_DIFFUSE,
-                    0,
-                    pathBuffer,
-                    mapping,
-                    uvindex,
-                    blend,
-                    op,
-                    mapmode,
-                    flags
-                ) == 0) {
-                val texturePath = pathBuffer.dataString().replace("\\", "/")
-                val fullPath = "/" + modelDirectory.resolve(texturePath).normalize().joinToString("/")
-
-                texture = Texture.fromImageResource(fullPath) // Your own Texture loader
-            }
-
-            // Add more properties like reflectivity, shininess, etc., if needed
-            return Material(
-                Vector3f(
-                    color.r(),
-                    color.g(),
-                    color.b()
-                ).toColor(),
-                texture,
-            )
-        }
-
-        fun loadMesh(aiMesh: AIMesh, material: Material, boneMap: MutableMap<String, Bone>): Mesh {
-            val vertices = mutableListOf<Vertex>()
-            val indices = mutableListOf<Int>()
-
-            for (j in 0 until aiMesh.mNumVertices()) {
-                val aiPos = aiMesh.mVertices()[j]
-                val position = Vector3f(aiPos.x(), aiPos.y(), aiPos.z())
-
-                val aiNorm = aiMesh.mNormals()?.get(j)
-                if (aiNorm == null) {
-                    throw RuntimeException("no normal found")
-                }
-                val normal = Vector3f(aiNorm.x(), aiNorm.y(), aiNorm.z())
-
-                val texCoords = aiMesh.mTextureCoords(0)
-                val uv: Vector2f
-                if (texCoords != null) {
-                    val aiUV = texCoords[j]
-                    uv = Vector2f(aiUV.x(), aiUV.y())
-                } else {
-                    uv = Vector2f(0f, 0f)
-                }
-                vertices += Vertex(
-                    position,
-                    normal,
-                    uv
-                )
-            }
-
-            for (j in 0 until aiMesh.mNumFaces()) {
-                val face = aiMesh.mFaces()[j]
-                for (k in 0 until face.mNumIndices()) {
-                    indices += face.mIndices()[k]
-                }
-            }
-
-            return Mesh(vertices, indices, material)
-        }
-
-        fun loadModel(
-            directory: Path,
-            scene: AIScene,
-            node: AINode,
-            boneMap: MutableMap<String, Bone>,
-            transform: Matrix4f = Matrix4f(),
-            materials: List<Material>? = null
-        ): Model {
-            val name = node.mName().dataString()
-            val nodeTransform = node.mTransformation().toJoml().mul(transform)
-
-            // load materials
-            val loadedMaterials = materials ?: List(scene.mNumMaterials()) { i ->
-                loadMaterial(
-                    AIMaterial.create(scene.mMaterials()!![i]),
-                    directory
-                )
-            }
-
-            // Collect meshes for this node
-            val meshes = mutableListOf<Mesh>()
-            for (i in 0 until node.mNumMeshes()) {
-                val meshIndex = node.mMeshes()!![i]
-                val aiMesh = AIMesh.create(scene.mMeshes()!![meshIndex])
-
-                val materialIndex = aiMesh.mMaterialIndex()
-                val material = loadedMaterials[materialIndex]
-
-                meshes.add(loadMesh(aiMesh, material, boneMap))
-            }
-
-            // Create the model for this node
-            val model = Model(
-                meshes = meshes,
-                name = name
-            ).apply { transform(nodeTransform) }
-
-            // Recursively load children
-            for (i in 0 until node.mNumChildren()) {
-                val childNode = AINode.create(node.mChildren()!![i])
-                val childModel = loadModel(directory, scene, childNode, boneMap, nodeTransform)
-                model.addChild(childModel)
-            }
-
-            return model
-        }
-
-        fun fromAssimp(resourcePath: String): Model {
-            val flags = aiProcess_Triangulate or aiProcess_GenSmoothNormals or aiProcess_FlipUVs
-
-            val url = object {}.javaClass.getResource(resourcePath)
-            val path = url!!.toURI().toPath()
-
-            val scene = aiImportFile(path.absolute().toString(), flags)
-                ?: throw RuntimeException("Error loading scene: ${aiGetErrorString()}")
-
-            val directory = Path(resourcePath).parent
-
-            val rootNode = scene.mRootNode() ?: throw RuntimeException( "failed to load model from scene." )
-            val boneMap: MutableMap<String, Bone> = mutableMapOf()
-            val model = loadModel(directory, scene, rootNode, boneMap)
-
-            aiReleaseImport(scene)
-            return model
-        }
-    }
 }
 

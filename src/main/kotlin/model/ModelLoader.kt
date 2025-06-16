@@ -3,7 +3,6 @@ package org.kotlingl.model
 import org.joml.Matrix4f
 import org.joml.Vector2f
 import org.joml.Vector3f
-import org.joml.times
 import org.kotlingl.entity.Material
 import org.kotlingl.entity.Texture
 import org.kotlingl.entity.toColor
@@ -13,19 +12,8 @@ import org.lwjgl.assimp.AIColor4D
 import org.lwjgl.assimp.AIMaterial
 import org.lwjgl.assimp.AIMesh
 import org.lwjgl.assimp.AINode
-import org.lwjgl.assimp.AIScene
 import org.lwjgl.assimp.AIString
-import org.lwjgl.assimp.Assimp.AI_MATKEY_COLOR_DIFFUSE
-import org.lwjgl.assimp.Assimp.aiGetErrorString
-import org.lwjgl.assimp.Assimp.aiGetMaterialColor
-import org.lwjgl.assimp.Assimp.aiGetMaterialTexture
-import org.lwjgl.assimp.Assimp.aiImportFile
-import org.lwjgl.assimp.Assimp.aiProcess_FlipUVs
-import org.lwjgl.assimp.Assimp.aiProcess_GenSmoothNormals
-import org.lwjgl.assimp.Assimp.aiProcess_Triangulate
-import org.lwjgl.assimp.Assimp.aiReleaseImport
-import org.lwjgl.assimp.Assimp.aiTextureType_DIFFUSE
-import org.lwjgl.assimp.Assimp.aiTextureType_NONE
+import org.lwjgl.assimp.Assimp.*
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
 import java.nio.file.Path
@@ -41,6 +29,7 @@ data class ModelCacheData (
     val name: String,
     val children: List<ModelCacheData>,
     val meshes: List<Mesh>,
+    var skeletonHash: Int? = null
 )
 
 class ModelLoader {
@@ -55,14 +44,15 @@ class ModelLoader {
 
     fun createModel(lookupName: String): Model {
         val filePath = modelLookup[lookupName] ?: error("Model $lookupName hasn't been loaded.")
-        return buildModel(modelCache.getValue(filePath))
+        val model = buildModel(modelCache.getValue(filePath))
+        return model
     }
 
     private fun buildModel(modelData: ModelCacheData): Model {
         return Model(
             modelData.name,
             modelData.meshes,
-            modelData.skeleton,
+            skeletonCache[modelData.skeletonHash],
             modelData.children.map {buildModel(it)}.toMutableList()
         )
     }
@@ -71,12 +61,13 @@ class ModelLoader {
         if (modelCache.containsKey(filePath)) throw IllegalArgumentException("model already loaded!")
         if (modelLookup.containsKey(name)) throw IllegalArgumentException("model already exists with that name!")
         importModel(filePath)
+        modelLookup[name] = filePath
     }
 
     private fun importModel(resourcePath: String) {
         //val path = normalizePath(filepath)
 
-        val flags = aiProcess_Triangulate or aiProcess_GenSmoothNormals or aiProcess_FlipUVs
+        val flags = aiProcess_GlobalScale or aiProcess_Triangulate or aiProcess_GenSmoothNormals or aiProcess_FlipUVs
 
         val url = object {}.javaClass.getResource(resourcePath)
         val path = url!!.toURI().toPath()
@@ -92,9 +83,9 @@ class ModelLoader {
             importMaterial(AIMaterial.create(scene.mMaterials()!![i]), directory)
         }
         val aiMeshes = List(scene.mNumMeshes()) { i ->
-            AIMesh.create(scene.mMaterials()!![i])
+            AIMesh.create(scene.mMeshes()!![i])
         }
-        aiMeshes.map {
+        val meshes = aiMeshes.map {
             importMesh(it, materials[it.mMaterialIndex()])
         }
 
@@ -106,10 +97,13 @@ class ModelLoader {
             }
         }.flatten().toSet()
 
-        val rootBoneNode = importSkeleton(boneNames)
-        val skeleton = skeletonCache.getOrDefault(rootBoneNode.hashCode(), rootBoneNode)
+        val rootBoneNode = importSkeleton(boneNames, rootNode)
+        val skeletonHash = rootBoneNode.hashCode()
+        skeletonCache[skeletonHash] = rootBoneNode
 
-        val modelCacheData = importNode(directory, scene, rootNode, boneNames)
+        val modelCacheData = importNode(rootNode, meshes)
+        modelCacheData.skeletonHash = skeletonHash
+        modelCache[resourcePath] = modelCacheData
 
         aiReleaseImport(scene)
     }
@@ -234,43 +228,28 @@ class ModelLoader {
     }
 
     fun importNode(
-        directory: Path,
-        scene: AIScene,
         node: AINode,
-        boneNames: Set<String>,
+        meshes: List<Mesh>,
         parentModelTransform: Matrix4f = Matrix4f(),
     ): ModelCacheData {
-        val name = node.mName().dataString()
         // where each bone/model is relative to it's parent
         val localTransform = node.mTransformation().toJoml()
-        // where each bone is in world space
-        val globalTransform = parentGlobalTransform.mul(localTransform, Matrix4f())
         // where each model is in world space
         val modelTransform = parentModelTransform.mul(localTransform, Matrix4f())
 
         val childrenData = List(node.mNumChildren()) { i ->
             val childNode = AINode.create(node.mChildren()!![i])
-            importNode(directory, scene, childNode, boneNames, modelTransform, globalTransform)
+            importNode(childNode, meshes, modelTransform)
         }
 
-        // add bone node
-        val boneNode = BoneNode(
-            name,
-            localTransform,
-            globalTransform,
+        val nodeMeshes = List(node.mNumMeshes()) { i ->
+            meshes[node.mMeshes()!![i]]
+        }
+
+        return ModelCacheData(
+            node.mName().dataString(),
+            childrenData,
+            nodeMeshes
         )
-
-        // Create the model for this node
-        val model = Model(
-            meshes = meshes,
-            name = name
-        ).apply {
-            modelTransform
-        }
-
-        // Recursively load children
-        val children: MutableList<String> = mutableListOf()
-        for (i in 0 until node.mNumChildren()) {
-        }
     }
 }
