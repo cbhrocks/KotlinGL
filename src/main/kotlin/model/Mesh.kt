@@ -29,17 +29,18 @@ class Mesh(
     }
 
     val triangles: List<Triangle> by lazy {
-        indices.chunked(3).map({ (i0, i1, i2) ->
+        indices.chunked(3).map { (i0, i1, i2) ->
             Triangle(
                 vertices[i0],
                 vertices[i1],
                 vertices[i2],
                 material
             )
-        })
+        }
     }
 
     init {
+        require(indices.size >= 3) { "A mesh must have vertices associated with it." }
         for (i in indices) {
             require(i in 0..vertices.size)
         }
@@ -50,15 +51,17 @@ class Mesh(
     }
 
     override fun computeAABB(): AABB {
-        val min = Vector3f(Float.POSITIVE_INFINITY)
-        val max = Vector3f(Float.NEGATIVE_INFINITY)
+        return this.bvhNode.boundingBox
 
-        for (v in vertices) {
-            min.min(v.position)
-            max.max(v.position)
-        }
+        //val min = Vector3f(Float.POSITIVE_INFINITY)
+        //val max = Vector3f(Float.NEGATIVE_INFINITY)
 
-        return AABB(min, max)
+        //for (v in vertices) {
+        //    min.min(v.position)
+        //    max.max(v.position)
+        //}
+
+        //return AABB(min, max)
     }
 
     override fun getBVHNode(): BVHNode {

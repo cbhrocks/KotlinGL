@@ -10,7 +10,6 @@ class BVHNode (
     val left: BVHNode? = null,
     val right: BVHNode? = null,
     val leaf: Bounded? = null,
-
 ){
     fun intersects(ray: Ray): Intersection? {
         if (!this.boundingBox.intersect(ray)) return null

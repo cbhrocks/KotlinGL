@@ -1,4 +1,6 @@
 package model
+import org.joml.Matrix4f
+import org.joml.Vector2f
 import org.joml.Vector3f
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
@@ -9,30 +11,64 @@ import org.kotlingl.model.BVHNode
 import org.kotlingl.model.BoneNode
 import org.kotlingl.model.Mesh
 import org.kotlingl.model.Model
+import org.kotlingl.model.Vertex
 import org.kotlingl.shapes.AABB
 import org.kotlingl.shapes.Bounded
 import org.kotlingl.shapes.Ray
+import org.kotlingl.shapes.Triangle
+import kotlin.test.assertIs
 
 class ModelTest {
 
     lateinit var mat: Material
     lateinit var mesh: Mesh
     lateinit var childMesh: Mesh
-    lateinit var ray: Ray
+    lateinit var childModel: Model
+    lateinit var parentModel: Model
 
     @BeforeEach
     fun setup() {
         mat = Material()
-        mesh = Mesh(listOf(), listOf(), mat)
-        childMesh = Mesh(listOf(), listOf(), mat)
-        ray = Ray(origin = Vector3f(0f, 0f, 0f), direction = Vector3f(1f, 0f, 0f))
+        mesh = Mesh(listOf(
+            Vertex(
+                Vector3f(0f,0f,0f),
+                Vector3f(0f, 0f, -1f),
+                Vector2f()
+            ),
+            Vertex(
+                Vector3f(1f,0f,0f),
+                Vector3f(0f, 0f, -1f),
+                Vector2f()
+            ),
+            Vertex(
+                Vector3f(0f,1f,0f),
+                Vector3f(0f, 0f, -1f),
+                Vector2f()
+            )
+        ), listOf(0,1,2), mat)
+        childMesh = Mesh(listOf(
+            Vertex(
+                Vector3f(1f,0f,0f),
+                Vector3f(0f, 0f, -1f),
+                Vector2f()
+            ),
+            Vertex(
+                Vector3f(1f,1f,0f),
+                Vector3f(0f, 0f, -1f),
+                Vector2f()
+            ),
+            Vertex(
+                Vector3f(0f,1f,0f),
+                Vector3f(0f, 0f, -1f),
+                Vector2f()
+            )
+        ), listOf(0,1,2), mat)
+        childModel = Model(name = "child", meshes = listOf(childMesh), children = mutableListOf())
+        parentModel = Model(name = "parent", meshes = listOf(mesh), children = mutableListOf(childModel))
     }
 
     @Test
     fun `allMeshes returns all meshes from self and children`() {
-        val childModel = Model(name = "child", meshes = listOf(childMesh), children = mutableListOf())
-        val parentModel = Model(name = "parent", meshes = listOf(mesh), children = mutableListOf(childModel))
-
         val result = parentModel.allMeshes()
 
         assertEquals(2, result.size)
@@ -41,45 +77,49 @@ class ModelTest {
     }
 
     @Test
-    fun `intersects returns null if no mesh intersects`() {
-        val model = Model(name = "model", meshes = listOf(mesh), children = mutableListOf())
-        val result = model.intersects(ray)
+    fun `bvhNode creates a tree with one leaf per mesh and child`() {
+        val bvhNode = parentModel.bvhNode
+        assertNull(bvhNode.left?.left)
+        assertNull(bvhNode.left?.right)
+        assertIs<Mesh>(bvhNode.left?.leaf)
+        assertNull(bvhNode.right?.left)
+        assertNull(bvhNode.right?.right)
+        assertIs<Model>(bvhNode.right?.leaf)
+    }
 
+    @Test
+    fun `computeAABB encapsulates all meshes and children`() {
+        val aabb = mesh.computeAABB()
+        assertEquals(aabb.min, Vector3f(0f, 0f, 0f))
+        assertEquals(aabb.max, Vector3f(1f, 1f, 0f))
+    }
+
+    @Test
+    fun `centroid is in the middle of the model and its children`() {
+        assertEquals(parentModel.centroid(), Vector3f(0.5f, 0.5f, 0f))
+    }
+
+    @Test
+    fun `intersects returns null if no mesh or child intersects`() {
+        val ray = Ray(origin = Vector3f(0f, 0f, 0f), direction = Vector3f(1f, 0f, 0f))
+        val result = parentModel.intersects(ray)
         assertNull(result)
     }
 
     @Test
     fun `intersects returns result from intersecting mesh`() {
-        // Fake mesh that will return an intersection
-        val intersectingMesh = object : Bounded {
-            override fun intersects(ray: Ray): Intersection? {
-                return Intersection(Vector3f(0f, 0f, 0f), Vector3f(1f, 0f, 0f), 5f, )
-            }
-
-            override fun getBVHNode(): BVHNode {
-                TODO("Not yet implemented")
-            }
-
-            override fun computeAABB(): AABB {
-                TODO("Not yet implemented")
-            }
-
-            override fun centroid(): Vector3f {
-                TODO("Not yet implemented")
-            }
-        }
-
-        val model = Model(name = "model", meshes = listOf(intersectingMesh), children = listOf())
-        val result = model.intersects(ray)
-
+        val origin = Vector3f(0f, 0f, -1f)
+        val direction = childModel.centroid().sub(origin).normalize()
+        val ray = Ray(origin, direction)
+        val result = parentModel.intersects(ray)
         assertNotNull(result)
-        assertEquals(1.0f, result?.distance)
+        assertEquals(origin.distance(childModel.centroid()), result?.t)
     }
 
     @Test
     fun `model can be constructed with skeleton`() {
-        val boneNode = BoneNode(name = "root", localTransform = Matrix4.identity(), globalTransform = Matrix4.identity())
-        val model = Model(name = "skelModel", meshes = listOf(), children = listOf(), skeleton = boneNode)
+        val boneNode = BoneNode(name = "root", localTransform = Matrix4f(), globalTransform = Matrix4f())
+        val model = Model(name = "skelModel", meshes = listOf(), children = mutableListOf(), skeleton = boneNode)
 
         assertEquals("root", model.skeleton?.name)
     }

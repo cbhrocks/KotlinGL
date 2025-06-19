@@ -42,7 +42,7 @@ class Model(
     private var scale: Vector3f = Vector3f(1f, 1f, 1f)
 
     val bvhNode: BVHNode by lazy {
-        BVHNode.fromBounded(this.meshes)
+        BVHNode.fromBounded(listOf(this.meshes, this.children).flatten())
     }
 
     fun transform(
@@ -74,10 +74,11 @@ class Model(
     override fun intersects(ray: Ray): Intersection? {
         val localRay = ray.transformedBy(modelMInverse)
 
-        val localHit = (meshes.mapNotNull {
-            it.intersects(ray)
-        } + children.mapNotNull { it.intersects(localRay) })
-            .minByOrNull { it.t }
+        //val localHit = (meshes.mapNotNull {
+        //    it.intersects(ray)
+        //} + children.mapNotNull { it.intersects(localRay) })
+        //    .minByOrNull { it.t }
+        val localHit = this.bvhNode.intersects(localRay)
 
         return localHit?.let {
             val hitPointWorld = modelM.transformPosition(localHit.point, Vector3f())
@@ -100,15 +101,17 @@ class Model(
     }
 
     override fun computeAABB(): AABB {
-        return this.meshes.map { computeAABB() }.reduce { acc, curAABB -> AABB.surroundingBox(acc, curAABB) }
+        return this.bvhNode.boundingBox
+        //return this.meshes.map { computeAABB() }.reduce { acc, curAABB -> AABB.surroundingBox(acc, curAABB) }
     }
 
     override fun centroid(): Vector3f {
         val center = Vector3f()
-        for (mesh in meshes) {
-            center.add(mesh.centroid())
+        val allBounded = meshes + children
+        for (bounded in allBounded) {
+            center.add(bounded.centroid())
         }
-        return center.div(meshes.size.toFloat())
+        return center.div(allBounded.size.toFloat())
     }
 
     fun allMeshes(): List<Bounded> {

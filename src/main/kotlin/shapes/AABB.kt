@@ -25,7 +25,7 @@ data class AABB(val min: Vector3f, val max: Vector3f) {
             t0 = maxOf(t0, tNear)
             t1 = minOf(t1, tFar)
 
-            if (t1 <= t0) return false
+            if (t1 < t0) return false
         }
 
         return true
