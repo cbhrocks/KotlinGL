@@ -35,21 +35,19 @@ class Model(
     val skeleton: BoneNode? = null,
     var children: MutableList<Model> = mutableListOf()
 ) : Bounded {
-    private var modelM: Matrix4f = Matrix4f()
-    private var modelMInverse: Matrix4f = Matrix4f()
-    private var position: Vector3f = Vector3f(0f,0f,0f)
-    private var rotation: Quaternionf = Quaternionf()
-    private var scale: Vector3f = Vector3f(1f, 1f, 1f)
+    var modelM: Matrix4f = Matrix4f()
+        private set
+    var modelMInverse: Matrix4f = Matrix4f()
+        private set
+    var position: Vector3f = Vector3f(0f,0f,0f)
+        private set
+    var rotation: Quaternionf = Quaternionf()
+        private set
+    var scale: Vector3f = Vector3f(1f, 1f, 1f)
+        private set
 
     val bvhNode: BVHNode by lazy {
         BVHNode.fromBounded(listOf(this.meshes, this.children).flatten())
-    }
-
-    fun transform(
-        mat: Matrix4f
-    ) {
-        this.modelM = mat
-        mat.invert(this.modelMInverse)
     }
 
     fun transform(
@@ -57,7 +55,10 @@ class Model(
         rotation: Quaternionf = this.rotation,
         scale: Vector3f = this.scale
     ) {
-        this.modelM = this.modelM.identity().translation(position)
+        this.position = position
+        this.rotation = rotation
+        this.scale = scale
+        this.modelM.identity().translation(position)
             .rotation(rotation)
             .scale(scale)
         this.modelM.invert(this.modelMInverse)

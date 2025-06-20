@@ -1,5 +1,6 @@
 package model
 import org.joml.Matrix4f
+import org.joml.Quaternionf
 import org.joml.Vector2f
 import org.joml.Vector3f
 import org.junit.jupiter.api.Test
@@ -16,6 +17,7 @@ import org.kotlingl.shapes.AABB
 import org.kotlingl.shapes.Bounded
 import org.kotlingl.shapes.Ray
 import org.kotlingl.shapes.Triangle
+import kotlin.math.PI
 import kotlin.test.assertIs
 
 class ModelTest {
@@ -114,6 +116,44 @@ class ModelTest {
         val result = parentModel.intersects(ray)
         assertNotNull(result)
         assertEquals(origin.distance(childModel.centroid()), result?.t)
+    }
+
+    @Test
+    fun `mesh deep in model tree intersect`() {
+        val grandParentModel = Model("grandparent", listOf(), children = mutableListOf(parentModel))
+        val origin = Vector3f(0f, 0f, -1f)
+        val direction = childModel.centroid().sub(origin).normalize()
+        val ray = Ray(origin, direction)
+        val result = parentModel.intersects(ray)
+        assertNotNull(result)
+        assertEquals(origin.distance(childModel.centroid()), result?.t)
+    }
+
+    @Test
+    fun `transform updates models position rotation and scale`() {
+        val oldMatrix = parentModel.modelM.clone()
+        val newPosition = Vector3f(1f, 1f, 1f)
+        val newRotation = Quaternionf().rotateY(PI.toFloat())
+        val newScale = Vector3f(2f, 2f, 2f)
+        parentModel.transform(newPosition, newRotation, newScale )
+        assertEquals(parentModel.position, newPosition)
+        assertEquals(parentModel.rotation, newRotation)
+        assertEquals(parentModel.scale, newScale)
+        assertNotEquals(parentModel.modelM, oldMatrix)
+    }
+
+    @Test
+    fun `transformed model intersects`() {
+        parentModel.transform(position = Vector3f(1f, 0f, 0f))
+        val missRay = Ray(Vector3f(0.5f, 0.5f, -1f), Vector3f(0f, 0f, 1f))
+        val result = parentModel.intersects(missRay)
+        assertNull(result)
+
+        val hitRay = Ray(Vector3f(1.5f, 1.5f, -1f), Vector3f(0f, 0f, 1f))
+        val hitResult = parentModel.intersects(hitRay)
+        assertNotNull(hitResult)
+        // assertNotNull(result)
+        // assertEquals(origin.distance(childModel.centroid()), result?.t)
     }
 
     @Test
