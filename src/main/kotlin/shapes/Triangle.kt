@@ -47,10 +47,8 @@ class Triangle (
         // At this stage, we can compute t to find out where the intersection point is on the line
         val t = f * edge2.dot(q)
 
-        val uv = if (material.texture != null) {
-            val w = 1f - u - v
-            v0.uv * w + v1.uv * u + v2.uv * v
-        } else null
+        val w = 1f - u - v
+        val uv = v0.uv * w + v1.uv * u + v2.uv * v
 
         return if (t > EPSILON) {
             Intersection(

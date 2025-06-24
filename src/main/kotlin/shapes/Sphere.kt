@@ -64,7 +64,7 @@ class Sphere(
         val closestPoint = ray.origin + ray.direction * closestDistance
         val normal = (closestPoint - this.center).normalize()
 
-        val uv = if (material.texture != null) getUVIntersect(closestPoint) else null
+        val uv = getUVIntersect(closestPoint)
 
         return Intersection(
             closestPoint,

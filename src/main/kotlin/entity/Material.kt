@@ -1,5 +1,6 @@
 package org.kotlingl.entity
 
+import org.joml.Vector2f
 import org.joml.Vector2fc
 
 data class Material(
@@ -9,6 +10,7 @@ data class Material(
     var baseColor: ColorRGB = ColorRGB(150, 150, 150),
     var reflect: Float = 0f,
     val shininess: Float = 1f,
+    val uvScale: Vector2fc = Vector2f(1f, 1f),
 ) {
     fun sampleDiffuse(uv: Vector2fc): ColorRGB {
         return diffuseTexture?.sample(uv) ?: baseColor

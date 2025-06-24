@@ -26,10 +26,9 @@ class Plane(
         val rawU = local.dot(tangent)
         val rawV = local.dot(bitangent)
         // the addition moves the material to be centered on the origin of the plane.
-        val scaledU = (rawU / material.uvScale.x) + 0.5f
-        val scaledV = (rawV / material.uvScale.y) + 0.5f
-        val wrappedUV = material.getWrappedUV(Vector2f(scaledU, scaledV))
-        return wrappedUV
+        val scaledU = (rawU / material.uvScale.x()) + 0.5f
+        val scaledV = (rawV / material.uvScale.y()) + 0.5f
+        return Vector2f(scaledU, scaledV)
     }
 
     override fun intersects(ray: Ray): Intersection? {
@@ -41,7 +40,7 @@ class Plane(
         val t = (this.position - ray.origin).dot(this.normal) / denom
         val hitPoint = ray.origin + ray.direction * t
         val isFrontFace = ray.direction.dot(this.normal) < 0
-        val uv = if (material.texture != null) getUVIntersect(hitPoint, position, tangent, normal) else null
+        val uv = getUVIntersect(hitPoint, position, tangent, normal)
 
         return if (t >= 0f) Intersection(
             hitPoint,

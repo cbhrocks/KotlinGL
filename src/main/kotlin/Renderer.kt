@@ -35,7 +35,7 @@ class Renderer(val scene: Scene, var width: Int, var height: Int) {
 
         // Setup a key callback. It will be called every time a key is pressed, repeated or released.
         GLFW.glfwSetKeyCallback(window, { window, key, scancode, action, mods ->
-            if (key === GLFW.GLFW_KEY_ESCAPE && action === GLFW.GLFW_RELEASE) GLFW.glfwSetWindowShouldClose(
+            if (key == GLFW.GLFW_KEY_ESCAPE && action == GLFW.GLFW_RELEASE) GLFW.glfwSetWindowShouldClose(
                 window,
                 true
             ) // We will detect this in the rendering loop

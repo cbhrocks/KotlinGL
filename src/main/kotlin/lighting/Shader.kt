@@ -44,7 +44,7 @@ class AmbientStage(
     val intensity: Float
 ) : ShadingStage {
     override fun shade(hit: Intersection, scene: Scene, bounce: Int): Vector3f {
-        return (hit.material.texture?.sample(hit.uv ?: Vector2f(0f, 0f))
+        return (hit.material.diffuseTexture?.sample(hit.uv ?: Vector2f(0f, 0f))
             ?: hit.material.baseColor).toVector3f().mul(this.intensity)
     }
 }
@@ -74,7 +74,7 @@ class DiffuseStage : ShadingStage {
 
             val intensity = light.computeIntensity(hit, lightDir)
 
-            val color = hit.material.texture?.sample(hit.uv ?: Vector2f(0f, 0f))
+            val color = hit.material.diffuseTexture?.sample(hit.uv ?: Vector2f(0f, 0f))
                 ?: hit.material.baseColor
 
             acc + color.toVector3f() * intensity

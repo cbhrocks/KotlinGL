@@ -18,8 +18,8 @@ class Texture(
     val imageData: ByteBuffer,
     val width: Int,
     val height: Int,
-    val wrapU: WrapMode,
-    val wrapV: WrapMode,
+    var wrapU: WrapMode = WrapMode.REPEAT,
+    var wrapV: WrapMode = WrapMode.REPEAT,
     val uvIndex: Int = 0,
     val path: String = ""
 ) {
@@ -68,9 +68,5 @@ class Texture(
         //        WrapMode.REPEAT,
         //    )
         //}
-
-        fun fromAssimp(aiTexture: Texture) {
-
-        }
     }
 }
