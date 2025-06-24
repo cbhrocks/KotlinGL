@@ -26,21 +26,24 @@ fun main() {
     val ml = ModelLoader()
     ml.loadModel("/models/spider/spider.obj", "spider")
     ml.loadModel("/models/box/box.obj", "box")
-    ml.loadModel("/models/blocky-characters/FBX format/character-a.fbx", "blocky-character-a")
+    //ml.loadModel("/models/blocky-characters/FBX format/character-a.fbx", "blocky-character-a")
+    ml.loadModel("/models/blocky-characters/OBJ format/character-a.obj", "blocky-character-a")
     val spider = ml.createModel("spider")
     spider.transform(
-        rotation = Quaternionf().rotateY(PI.toFloat()/2f),
+        rotation = Quaternionf().rotateY(-PI.toFloat()/2f),
         scale = Vector3f(.02f, .02f, .02f)
     )
     val box = ml.createModel("box")
     val blockyChar = ml.createModel("blocky-character-a")
     blockyChar.transform(
-        //scale = Vector3f(.03f, .03f, .03f)
-        rotation = Quaternionf().rotateY(PI.toFloat()/2f) * Quaternionf().rotateX(PI.toFloat()/2f),
+        //vector3f()
+        scale = Vector3f(.5f, .5f, .5f),
+        rotation = Quaternionf().rotateY(PI.toFloat())//.rotateX(PI.toFloat()/2f),
     )
 
     val scene = Scene(
         shader = Shader.Builder()
+            .addStage(AmbientStage(1f))
             .addStage(DiffuseStage())
             .addStage(SpecularStage())
             .build(),
@@ -56,10 +59,6 @@ fun main() {
             )
         ),
         lights = mutableListOf(
-            AmbientLight(
-                ColorRGB.WHITE,
-                1.0f,
-            ),
             //PointLight(
             //    ColorRGB.WHITE,
             //    Vector3f(-2f, 3f, -2f),
@@ -72,9 +71,9 @@ fun main() {
             //)
         ),
         shapes = mutableListOf(
-            spider,
+            //spider,
             //box,
-            //blockyChar,
+            blockyChar,
             //Model.fromAssimp("/models/box/box.obj").apply {
             //    transform(
             //        Vector3f(0f, 1f, -3f),

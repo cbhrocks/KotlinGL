@@ -143,17 +143,39 @@ class ModelTest {
     }
 
     @Test
-    fun `transformed model intersects`() {
+    fun `translated model intersects`() {
         parentModel.transform(position = Vector3f(1f, 0f, 0f))
         val missRay = Ray(Vector3f(0.5f, 0.5f, -1f), Vector3f(0f, 0f, 1f))
         val result = parentModel.intersects(missRay)
         assertNull(result)
 
-        val hitRay = Ray(Vector3f(1.5f, 1.5f, -1f), Vector3f(0f, 0f, 1f))
+        val hitRay = Ray(Vector3f(1.5f, 0.5f, -1f), Vector3f(0f, 0f, 1f))
         val hitResult = parentModel.intersects(hitRay)
         assertNotNull(hitResult)
-        // assertNotNull(result)
-        // assertEquals(origin.distance(childModel.centroid()), result?.t)
+    }
+
+    @Test
+    fun `rotated model intersects`() {
+        parentModel.transform(rotation = Quaternionf().rotateY(PI.toFloat()))
+        val missRay = Ray(Vector3f(0.5f, 0.5f, -1f), Vector3f(0f, 0f, 1f))
+        val result = parentModel.intersects(missRay)
+        assertNull(result)
+
+        val hitRay = Ray(Vector3f(-0.5f, 0.5f, -1f), Vector3f(0f, 0f, 1f))
+        val hitResult = parentModel.intersects(hitRay)
+        assertNotNull(hitResult)
+    }
+
+    @Test
+    fun `scaled model intersects`() {
+        parentModel.transform(scale = Vector3f(0.5f, 0.5f, 0.5f))
+        val missRay = Ray(Vector3f(0.75f, 0.75f, -1f), Vector3f(0f, 0f, 1f))
+        val result = parentModel.intersects(missRay)
+        assertNull(result)
+
+        val hitRay = Ray(Vector3f(0.25f, 0.25f, -1f), Vector3f(0f, 0f, 1f))
+        val hitResult = parentModel.intersects(hitRay)
+        assertNotNull(hitResult)
     }
 
     @Test

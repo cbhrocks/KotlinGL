@@ -5,15 +5,22 @@ import org.joml.Vector2f
 import org.joml.Vector3f
 import org.kotlingl.entity.Material
 import org.kotlingl.entity.Texture
+import org.kotlingl.entity.WrapMode
 import org.kotlingl.entity.toColor
 import org.kotlingl.math.toJoml
+import org.lwjgl.BufferUtils
 import org.lwjgl.assimp.AIBone
 import org.lwjgl.assimp.AIColor4D
 import org.lwjgl.assimp.AIMaterial
 import org.lwjgl.assimp.AIMesh
 import org.lwjgl.assimp.AINode
 import org.lwjgl.assimp.AIString
+import org.lwjgl.assimp.AITexture
 import org.lwjgl.assimp.Assimp.*
+import org.lwjgl.stb.STBImage.stbi_failure_reason
+import org.lwjgl.stb.STBImage.stbi_load_from_memory
+import org.lwjgl.system.MemoryStack
+import java.lang.IllegalStateException
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
 import java.nio.file.Path
@@ -79,6 +86,9 @@ class ModelLoader {
 
         val rootNode = scene.mRootNode() ?: throw RuntimeException( "failed to load model from scene." )
 
+        val textures = List(scene.mNumTextures()) { i ->
+            importTexture(AITexture.create(scene.mTextures()!![i]))
+        }
         val materials = List(scene.mNumMaterials()) { i ->
             importMaterial(AIMaterial.create(scene.mMaterials()!![i]), directory)
         }
@@ -108,21 +118,55 @@ class ModelLoader {
         aiReleaseImport(scene)
     }
 
+    fun aiToWrapMode(mode: Int): WrapMode = when (mode) {
+        aiTextureMapMode_Wrap -> WrapMode.REPEAT
+        aiTextureMapMode_Clamp -> WrapMode.CLAMP
+        aiTextureMapMode_Mirror -> WrapMode.MIRROR
+        else -> WrapMode.REPEAT
+    }
+
+    fun importTexture(texture: AITexture): Texture {
+        val isCompressed = texture.mHeight() == 0
+        if (!isCompressed) {
+            throw UnsupportedOperationException("Only compressed embedded textures are supported.")
+        }
+
+        // the width is the size in bytes when compressed
+        val dataSize = texture.mWidth()
+        val dataBuffer = texture.pcDataCompressed() ?: throw IllegalStateException("No texture data!")
+
+        // Decode using STBImage
+        MemoryStack.stackPush().use { stack ->
+            val xBuf = stack.mallocInt(1)
+            val yBuf = stack.mallocInt(1)
+            val compBuf = stack.mallocInt(1)
+
+            // STBImage will decode from memory
+            val decoded = stbi_load_from_memory(dataBuffer, xBuf, yBuf, compBuf, 4)
+                ?: throw RuntimeException("Failed to decode embedded texture: ${stbi_failure_reason()}")
+
+            val width = xBuf[0]
+            val height = yBuf[0]
+
+            // The 'decoded' ByteBuffer is now ready to use (RGBA format)
+            return Texture(decoded, width, height, wrapU, wrapV)
+        }
+    }
+
     fun importMaterial(material: AIMaterial, modelDirectory: Path): Material {
         val color = AIColor4D.create()
         aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, aiTextureType_NONE, 0, color)
 
         // Check for diffuse texture
-        val pathBuffer = AIString.calloc()
-        var texture: Texture? = null
 
-        // Explicitly typed nulls
-        val mapping: IntBuffer? = null
-        val uvindex: IntBuffer? = null
-        val blend: FloatBuffer? = null
-        val op: IntBuffer? = null
-        val mapmode: IntBuffer? = null
-        val flags: IntBuffer? = null
+        val pathBuffer = AIString.calloc()
+        var diffuseTexture: Texture? = null
+        val mapping = BufferUtils.createIntBuffer(1)
+        val uvIndex = BufferUtils.createIntBuffer(1)
+        val blend = BufferUtils.createFloatBuffer(1)
+        val op = BufferUtils.createIntBuffer(1)
+        val mapMode = BufferUtils.createIntBuffer(2)
+        val flags = BufferUtils.createIntBuffer(1)
 
         if (aiGetMaterialTexture(
                 material,
@@ -130,26 +174,40 @@ class ModelLoader {
                 0,
                 pathBuffer,
                 mapping,
-                uvindex,
+                uvIndex,
                 blend,
                 op,
-                mapmode,
+                mapMode,
                 flags
-            ) == 0) {
+            ) == aiReturn_SUCCESS) {
             val texturePath = pathBuffer.dataString().replace("\\", "/")
             val fullPath = "/" + modelDirectory.resolve(texturePath).normalize().joinToString("/")
+            val wrapU = aiToWrapMode(mapMode[0])
+            val wrapV = aiToWrapMode(mapMode[0])
 
-            texture = Texture.fromImageResource(fullPath) // Your own Texture loader
+            if (texturePath.startsWith("*")) {
+                val embeddedTexture = loadTexture
+            }
+
+            diffuseTexture = Texture(
+
+            )
+
+            //diffuseTexture = Texture.fromImageResource(
+            //    fullPath,
+            //    wrapU,
+            //    wrapV
+            //)
         }
 
         // Add more properties like reflectivity, shininess, etc., if needed
         return Material(
-            Vector3f(
+            diffuseTexture,
+            baseColor=Vector3f(
                 color.r(),
                 color.g(),
                 color.b()
             ).toColor(),
-            texture,
         )
     }
 

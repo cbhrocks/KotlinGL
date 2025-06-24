@@ -19,7 +19,7 @@ class AmbientLight(
     }
 
     override fun computeIntensity(hit: Intersection, direction: Vector3fc): Vector3f {
-        return hit.material.color.toVector3f() * color.toVector3f() * brightness
+        return hit.material.baseColor.toVector3f() * color.toVector3f() * brightness
     }
 
     override fun getDistance(point: Vector3fc): Float {

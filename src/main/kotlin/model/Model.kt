@@ -2,33 +2,21 @@ package org.kotlingl.model
 
 import org.joml.Matrix4f
 import org.joml.Quaternionf
-import org.joml.Vector2f
 import org.kotlingl.entity.Intersection
-import org.kotlingl.entity.Material
 import org.kotlingl.shapes.Ray
-import org.kotlingl.shapes.Triangle
-import org.lwjgl.assimp.AIColor4D
-import org.lwjgl.assimp.AIMaterial
-import org.lwjgl.assimp.AIMesh
 
 import org.joml.Vector3f
-import org.kotlingl.entity.Texture
-import org.kotlingl.entity.toColor
-import org.kotlingl.math.toJoml
 import org.kotlingl.shapes.AABB
 import org.kotlingl.shapes.Bounded
-import org.lwjgl.assimp.AIBone
-import org.lwjgl.assimp.AINode
-import org.lwjgl.assimp.AIScene
-import org.lwjgl.assimp.AIString
-import org.lwjgl.assimp.Assimp.*
-import java.nio.FloatBuffer
-import java.nio.IntBuffer
-import java.nio.file.Path
-import kotlin.io.path.Path
-import kotlin.io.path.absolute
-import kotlin.io.path.toPath
 
+/**
+ * @property modelM Model matrix transforms vertices from the model space into world space
+ * @property modelMInverse Model matrix inverse transforms vertices from the world space into model space
+ * @property position The models position in world/parent space
+ * @property rotation The models rotation in world/parent space
+ * @property scale The models scale in world/parent space
+ * @property bvhNode The root node of the bvh tree that contains one child or mesh per node
+ */
 class Model(
     val name: String,
     val meshes: List<Bounded>,
@@ -58,9 +46,11 @@ class Model(
         this.position = position
         this.rotation = rotation
         this.scale = scale
-        this.modelM.identity().translation(position)
-            .rotation(rotation)
-            .scale(scale)
+        this.modelM.translationRotateScale(
+            position,
+            rotation,
+            scale
+        )
         this.modelM.invert(this.modelMInverse)
     }
 
@@ -75,10 +65,6 @@ class Model(
     override fun intersects(ray: Ray): Intersection? {
         val localRay = ray.transformedBy(modelMInverse)
 
-        //val localHit = (meshes.mapNotNull {
-        //    it.intersects(ray)
-        //} + children.mapNotNull { it.intersects(localRay) })
-        //    .minByOrNull { it.t }
         val localHit = this.bvhNode.intersects(localRay)
 
         return localHit?.let {
