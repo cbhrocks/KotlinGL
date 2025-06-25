@@ -24,16 +24,16 @@ fun main() {
     val height = 240
     //val height = 1080
     val ml = ModelLoader()
-    ml.loadModel("/models/spider/spider.obj", "spider")
-    ml.loadModel("/models/box/box.obj", "box")
+    //ml.loadModel("/models/spider/spider.obj", "spider")
+    //ml.loadModel("/models/box/box.obj", "box")
     ml.loadModel("/models/blocky-characters/FBX format/character-a.fbx", "blocky-character-a")
     //ml.loadModel("/models/blocky-characters/OBJ format/character-a.obj", "blocky-character-a")
-    val spider = ml.createModel("spider")
-    spider.transform(
-        rotation = Quaternionf().rotateY(-PI.toFloat()/2f),
-        scale = Vector3f(.02f, .02f, .02f)
-    )
-    val box = ml.createModel("box")
+    //val spider = ml.createModel("spider")
+    //spider.transform(
+    //    rotation = Quaternionf().rotateY(-PI.toFloat()/2f),
+    //    scale = Vector3f(.02f, .02f, .02f)
+    //)
+    //val box = ml.createModel("box")
     val blockyChar = ml.createModel("blocky-character-a")
     blockyChar.transform(
         //vector3f()

@@ -21,21 +21,33 @@ class Model(
     val name: String,
     val meshes: List<Bounded>,
     val skeleton: BoneNode? = null,
-    var children: MutableList<Model> = mutableListOf()
+    var children: MutableList<Model> = mutableListOf(),
+    modelM: Matrix4f = Matrix4f()
 ) : Bounded {
-    var modelM: Matrix4f = Matrix4f()
+    var modelM = Matrix4f()
         private set
     var modelMInverse: Matrix4f = Matrix4f()
         private set
-    var position: Vector3f = Vector3f(0f,0f,0f)
-        private set
-    var rotation: Quaternionf = Quaternionf()
-        private set
-    var scale: Vector3f = Vector3f(1f, 1f, 1f)
-        private set
+    val position: Vector3f
+        get() = modelM.getTranslation(Vector3f())
+    val rotation: Quaternionf
+        get() = modelM.getNormalizedRotation(Quaternionf())
+    val scale: Vector3f
+        get() = modelM.getScale(Vector3f())
 
     val bvhNode: BVHNode by lazy {
         BVHNode.fromBounded(listOf(this.meshes, this.children).flatten())
+    }
+
+    init {
+        transform(modelM)
+    }
+
+    fun transform(
+        modelMatrix: Matrix4f
+    ) {
+        this.modelM = modelMatrix
+        this.modelM.invert(this.modelMInverse)
     }
 
     fun transform(
@@ -43,19 +55,12 @@ class Model(
         rotation: Quaternionf = this.rotation,
         scale: Vector3f = this.scale
     ) {
-        this.position = position
-        this.rotation = rotation
-        this.scale = scale
         this.modelM.translationRotateScale(
             position,
             rotation,
             scale
         )
         this.modelM.invert(this.modelMInverse)
-    }
-
-    init {
-        transform()
     }
 
     fun addChild(model: Model) {

@@ -29,6 +29,7 @@ data class ModelCacheData (
     val name: String,
     val children: List<ModelCacheData>,
     val meshes: List<Mesh>,
+    val modelTransform: Matrix4f,
     var skeletonHash: Int? = null
 )
 
@@ -53,7 +54,8 @@ class ModelLoader {
             modelData.name,
             modelData.meshes,
             skeletonCache[modelData.skeletonHash],
-            modelData.children.map {buildModel(it)}.toMutableList()
+            modelData.children.map {buildModel(it)}.toMutableList(),
+            modelData.modelTransform
         )
     }
 
@@ -330,6 +332,8 @@ class ModelLoader {
         val localTransform = node.mTransformation().toJoml()
         // where each model is in world space
         val modelTransform = parentModelTransform.mul(localTransform, Matrix4f())
+        println("${node.mName().dataString()} translation: ${modelTransform.getTranslation(Vector3f())}")
+        println("${node.mName().dataString()} scale: ${modelTransform.getScale(Vector3f())}")
 
         val childrenData = List(node.mNumChildren()) { i ->
             val childNode = AINode.create(node.mChildren()!![i])
@@ -343,7 +347,8 @@ class ModelLoader {
         return ModelCacheData(
             node.mName().dataString(),
             childrenData,
-            nodeMeshes
+            nodeMeshes,
+            modelTransform,
         )
     }
 }
