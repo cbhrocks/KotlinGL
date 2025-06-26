@@ -27,7 +27,7 @@ fun main() {
     //ml.loadModel("/models/spider/spider.obj", "spider")
     //ml.loadModel("/models/box/box.obj", "box")
     ml.loadModel("/models/blocky-characters/FBX format/character-a.fbx", "blocky-character-a")
-    //ml.loadModel("/models/blocky-characters/OBJ format/character-a.obj", "blocky-character-a")
+    ml.loadModel("/models/blocky-characters/OBJ format/character-a.obj", "blocky-character-a-obj")
     //val spider = ml.createModel("spider")
     //spider.transform(
     //    rotation = Quaternionf().rotateY(-PI.toFloat()/2f),
@@ -36,8 +36,11 @@ fun main() {
     //val box = ml.createModel("box")
     val blockyChar = ml.createModel("blocky-character-a")
     blockyChar.transform(
-        //vector3f()
-        scale = Vector3f(.5f, .5f, .5f),
+        rotation = Quaternionf().rotateY(PI.toFloat())//.rotateX(PI.toFloat()/2f),
+    )
+    val blockyCharOBJ = ml.createModel("blocky-character-a-obj")
+    blockyCharOBJ.transform(
+        Vector3f(1f, 0f, 0f),
         rotation = Quaternionf().rotateY(PI.toFloat())//.rotateX(PI.toFloat()/2f),
     )
 
@@ -52,8 +55,8 @@ fun main() {
                 // Vector3f(-1f, 1f, 120f),
                 // lookAt = Vector3f(0f, 0f, 0f),
                 //Vector3f(-0f, 50f, 200f),
-                Vector3f(0f, 1f, -2f),
-                lookAt = Vector3f(0f, 0f, 0f),
+                Vector3f(0f, 1f, -4f),
+                lookAt = Vector3f(0f, 1f, 0f),
                 resX = width,
                 resY = height,
             )
@@ -74,6 +77,7 @@ fun main() {
             //spider,
             //box,
             blockyChar,
+            blockyCharOBJ
             //Model.fromAssimp("/models/box/box.obj").apply {
             //    transform(
             //        Vector3f(0f, 1f, -3f),

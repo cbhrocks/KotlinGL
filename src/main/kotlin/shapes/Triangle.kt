@@ -79,10 +79,4 @@ class Triangle (
     override fun centroid(): Vector3f {
         return (v0.position + v1.position + v2.position)/3f
     }
-
-    override fun getBVHNode(): BVHNode {
-        return BVHNode(
-            this.computeAABB()
-        )
-    }
 }

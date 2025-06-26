@@ -24,9 +24,9 @@ class Mesh(
     val material: Material,
     val bones: List<Bone> = listOf()
 ): Bounded {
-    val bvhNode: BVHNode by lazy {
-        BVHNode.fromBounded(this.triangles)
-    }
+    //val bvhNode: BVHNode by lazy {
+    //    BVHNode.fromBounded(this.triangles)
+    //}
 
     val triangles: List<Triangle> by lazy {
         indices.chunked(3).map { (i0, i1, i2) ->
@@ -47,26 +47,27 @@ class Mesh(
     }
 
     override fun intersects(ray: Ray): Intersection? {
-        return this.bvhNode.intersects(ray)
+        //return this.bvhNode.intersects(ray)
+        return this.triangles.mapNotNull { it.intersects(ray) }.minBy { it.t }
     }
 
     override fun computeAABB(): AABB {
-        return this.bvhNode.boundingBox
+        //return this.bvhNode.localAABB
 
-        //val min = Vector3f(Float.POSITIVE_INFINITY)
-        //val max = Vector3f(Float.NEGATIVE_INFINITY)
+        val min = Vector3f(Float.POSITIVE_INFINITY)
+        val max = Vector3f(Float.NEGATIVE_INFINITY)
 
-        //for (v in vertices) {
-        //    min.min(v.position)
-        //    max.max(v.position)
-        //}
+        for (v in vertices) {
+            min.min(v.position)
+            max.max(v.position)
+        }
 
-        //return AABB(min, max)
+        return AABB(min, max)
     }
 
-    override fun getBVHNode(): BVHNode {
-        return this.bvhNode
-    }
+    //override fun getBVHNode(): BVHNode {
+    //    return this.bvhNode
+    //}
 
     override fun centroid(): Vector3f {
         val center = Vector3f()

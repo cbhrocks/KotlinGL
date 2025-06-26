@@ -1,13 +1,19 @@
 package org.kotlingl.shapes
 
+import org.joml.Matrix4f
+import org.joml.Matrix4fc
 import org.joml.Vector3f
 
-data class AABB(val min: Vector3f, val max: Vector3f) {
-    fun intersect(
+data class AABB(
+    val min: Vector3f,
+    val max: Vector3f,
+) {
+    fun intersects(
         ray: Ray,
         tMin: Float = 0.001f,
         tMax: Float = Float.POSITIVE_INFINITY
     ): Boolean {
+
         var t0 = tMin
         var t1 = tMax
 
@@ -39,6 +45,13 @@ data class AABB(val min: Vector3f, val max: Vector3f) {
             extent.y >= extent.z -> 1
             else -> 2
         }
+    }
+
+    fun transformedBy(matrix: Matrix4fc): AABB {
+        return AABB(
+            matrix.transformPosition(min, Vector3f()),
+            matrix.transformPosition(max, Vector3f())
+        )
     }
 
     companion object {

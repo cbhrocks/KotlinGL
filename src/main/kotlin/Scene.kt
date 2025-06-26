@@ -42,6 +42,6 @@ data class Scene(
             //return intersection.material.color
             return shader.shade(intersection, this, depth)
         }
-        return ColorRGB.BLACK
+        return ColorRGB(50, 50, 50)
     }
 }

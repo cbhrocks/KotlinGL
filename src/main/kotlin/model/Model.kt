@@ -8,6 +8,7 @@ import org.kotlingl.shapes.Ray
 import org.joml.Vector3f
 import org.kotlingl.shapes.AABB
 import org.kotlingl.shapes.Bounded
+import org.kotlingl.shapes.Intersectable
 
 /**
  * @property modelM Model matrix transforms vertices from the model space into world space
@@ -15,7 +16,8 @@ import org.kotlingl.shapes.Bounded
  * @property position The models position in world/parent space
  * @property rotation The models rotation in world/parent space
  * @property scale The models scale in world/parent space
- * @property bvhNode The root node of the bvh tree that contains one child or mesh per node
+ * @property bvhTree The BVH tree that encompases this model and all it's children. This tree is created lazily on
+ * intersects first call
  */
 class Model(
     val name: String,
@@ -23,10 +25,10 @@ class Model(
     val skeleton: BoneNode? = null,
     var children: MutableList<Model> = mutableListOf(),
     modelM: Matrix4f = Matrix4f()
-) : Bounded {
-    var modelM = Matrix4f()
+): Intersectable {
+    var modelM = modelM
         private set
-    var modelMInverse: Matrix4f = Matrix4f()
+    var modelMInverse: Matrix4f = modelM.invert(Matrix4f())
         private set
     val position: Vector3f
         get() = modelM.getTranslation(Vector3f())
@@ -35,12 +37,8 @@ class Model(
     val scale: Vector3f
         get() = modelM.getScale(Vector3f())
 
-    val bvhNode: BVHNode by lazy {
-        BVHNode.fromBounded(listOf(this.meshes, this.children).flatten())
-    }
-
-    init {
-        transform(modelM)
+    val bvhTree: BVHTree by lazy {
+        BVHTree.buildForModel(this)
     }
 
     fun transform(
@@ -68,42 +66,7 @@ class Model(
     }
 
     override fun intersects(ray: Ray): Intersection? {
-        val localRay = ray.transformedBy(modelMInverse)
-
-        val localHit = this.bvhNode.intersects(localRay)
-
-        return localHit?.let {
-            val hitPointWorld = modelM.transformPosition(localHit.point, Vector3f())
-            val hitWorldNormal = modelM.transformDirection(localHit.normal, Vector3f()).normalize()
-            val frontFace = ray.direction.dot(hitWorldNormal) < 0
-
-            Intersection(
-                hitPointWorld,
-                hitWorldNormal,
-                localHit.t,
-                localHit.material,
-                frontFace,
-                localHit.uv
-            )
-        }
-    }
-
-    override fun getBVHNode(): BVHNode {
-        return this.bvhNode
-    }
-
-    override fun computeAABB(): AABB {
-        return this.bvhNode.boundingBox
-        //return this.meshes.map { computeAABB() }.reduce { acc, curAABB -> AABB.surroundingBox(acc, curAABB) }
-    }
-
-    override fun centroid(): Vector3f {
-        val center = Vector3f()
-        val allBounded = meshes + children
-        for (bounded in allBounded) {
-            center.add(bounded.centroid())
-        }
-        return center.div(allBounded.size.toFloat())
+        return this.bvhTree.intersects(ray)
     }
 
     fun allMeshes(): List<Bounded> {

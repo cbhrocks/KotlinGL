@@ -22,6 +22,7 @@ import kotlin.collections.joinToString
 import kotlin.collections.plusAssign
 import kotlin.io.path.Path
 import kotlin.io.path.absolute
+import kotlin.io.path.extension
 import kotlin.io.path.toPath
 
 
@@ -68,11 +69,34 @@ class ModelLoader {
 
     private fun importModel(resourcePath: String) {
         //val path = normalizePath(filepath)
-
-        val flags = aiProcess_GlobalScale or aiProcess_Triangulate or aiProcess_GenSmoothNormals or aiProcess_FlipUVs
-
         val url = object {}.javaClass.getResource(resourcePath)
         val path = url!!.toURI().toPath()
+
+        val flags = when (path.extension) {
+            "fbx" -> aiProcess_Triangulate or
+                    aiProcess_GenSmoothNormals or
+                    aiProcess_JoinIdenticalVertices or
+                    aiProcess_SortByPType or
+                    aiProcess_LimitBoneWeights or
+                    aiProcess_ImproveCacheLocality or
+                    aiProcess_RemoveRedundantMaterials or
+                    //aiProcess_FlipUVs or
+                    aiProcess_CalcTangentSpace or
+                    aiProcess_GlobalScale or
+                    aiProcess_ValidateDataStructure or
+                    aiProcess_OptimizeMeshes or
+                    aiProcess_OptimizeGraph or
+                    aiProcess_FixInfacingNormals
+            else -> aiProcess_Triangulate or
+                    aiProcess_JoinIdenticalVertices or
+                    aiProcess_GenSmoothNormals or
+                    aiProcess_CalcTangentSpace or
+                    //aiProcess_FlipUVs or
+                    aiProcess_ImproveCacheLocality or
+                    aiProcess_SortByPType or
+                    aiProcess_ValidateDataStructure or
+                    aiProcess_RemoveRedundantMaterials
+        }
 
         val scene = aiImportFile(path.absolute().toString(), flags)
             ?: throw RuntimeException("Error loading scene: ${aiGetErrorString()}")
@@ -137,7 +161,7 @@ class ModelLoader {
         val imageBuffer = loadByteBufferFromResource(path)
 
         // Step 2: Decode image using STBImage
-        stbi_set_flip_vertically_on_load(true)
+        //stbi_set_flip_vertically_on_load(true)
         MemoryStack.stackPush().use { stack ->
             val width = stack.mallocInt(1)
             val height = stack.mallocInt(1)
@@ -162,7 +186,7 @@ class ModelLoader {
         val dataBuffer = aiTex.pcDataCompressed() ?: throw IllegalStateException("No texture data!")
 
         // Decode using STBImage
-        stbi_set_flip_vertically_on_load(true)
+        //stbi_set_flip_vertically_on_load(true)
         MemoryStack.stackPush().use { stack ->
             val xBuf = stack.mallocInt(1)
             val yBuf = stack.mallocInt(1)
@@ -331,7 +355,7 @@ class ModelLoader {
         // where each bone/model is relative to it's parent
         val localTransform = node.mTransformation().toJoml()
         // where each model is in world space
-        val modelTransform = parentModelTransform.mul(localTransform, Matrix4f())
+        val modelTransform = Matrix4f(parentModelTransform).mul(localTransform, Matrix4f())
         println("${node.mName().dataString()} translation: ${modelTransform.getTranslation(Vector3f())}")
         println("${node.mName().dataString()} scale: ${modelTransform.getScale(Vector3f())}")
 
@@ -348,6 +372,7 @@ class ModelLoader {
             node.mName().dataString(),
             childrenData,
             nodeMeshes,
+            //localTransform
             modelTransform,
         )
     }
