@@ -38,4 +38,42 @@ data class BoneNode(
         }
         return result
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as BoneNode
+
+        if (name != other.name) return false
+        if (localTransform != other.localTransform) return false
+        if (globalTransform != other.globalTransform) return false
+        if (children != other.children) return false
+        if (parent != other.parent) return false
+
+        return true
+    }
+}
+
+data class Skeleton(
+    val name: String,
+    val root: BoneNode,
+    val boneMap: Map<String, BoneNode>,
+    val animations: Map<String, Animation>
+) {
+    override fun hashCode(): Int = root.hashCode()
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Skeleton
+
+        if (name != other.name) return false
+        if (root != other.root) return false
+        if (boneMap != other.boneMap) return false
+        if (animations != other.animations) return false
+
+        return true
+    }
 }

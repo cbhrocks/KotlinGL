@@ -24,7 +24,7 @@ import org.kotlingl.shapes.Intersectable
 class Model(
     val name: String,
     val meshes: List<Bounded>,
-    val skeleton: BoneNode? = null,
+    val skeleton: Skeleton? = null,
     var children: MutableList<Model> = mutableListOf(),
     modelM: Matrix4f = Matrix4f()
 ): Intersectable {

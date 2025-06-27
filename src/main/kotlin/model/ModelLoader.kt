@@ -1,6 +1,7 @@
 package org.kotlingl.model
 
 import org.joml.Matrix4f
+import org.joml.Quaternionf
 import org.joml.Vector2f
 import org.joml.Vector3f
 import org.kotlingl.entity.Material
@@ -39,7 +40,11 @@ class ModelLoader {
     val modelLookup: MutableMap<String, String> = mutableMapOf()
     // the file name pointing to the ModelCacheData used for reconstruction.
     val modelCache: MutableMap<String, ModelCacheData> = mutableMapOf()
-    val skeletonCache: MutableMap<Int, BoneNode> = mutableMapOf()
+    val skeletonCache: MutableMap<Int, Skeleton> = mutableMapOf()
+    // textures loaded from files
+    val textureCache = mutableMapOf<String, Texture>()
+    val animationCache = mutableMapOf<String, NodeAnimation>()
+
 
     private fun normalizePath(path: String): String =
         Paths.get(path).normalize().toString().replace('\\', '/')
@@ -114,7 +119,6 @@ class ModelLoader {
         val meshes = aiMeshes.map {
             importMesh(it, materials[it.mMaterialIndex()])
         }
-
         val boneNames = aiMeshes.map { aiMesh ->
             List(aiMesh.mNumBones()) { i ->
                 AIBone.create(aiMesh.mBones()!![i])
@@ -123,9 +127,22 @@ class ModelLoader {
             }
         }.flatten().toSet()
 
-        val rootBoneNode = importSkeleton(boneNames, rootNode)
-        val skeletonHash = rootBoneNode.hashCode()
-        skeletonCache[skeletonHash] = rootBoneNode
+        val animCount = scene.mNumAnimations()
+        val aiAnimations = List(animCount) { i -> AIAnimation.create(scene.mAnimations()!![i]) }
+        val animations = aiAnimations.map {importAnimation(it)}.associateBy{it.name}
+
+        val rootBoneNode = importBoneNodes(boneNames, rootNode)
+        val boneMap = buildBoneNodeMap(rootBoneNode, boneNames)
+
+        val skeleton = Skeleton(
+            scene.mRootNode()?.mName()?.dataString() ?: "UnnamedSkeleton",
+            rootBoneNode,
+            boneMap,
+            animations
+        )
+
+        val skeletonHash = skeleton.hashCode()
+        skeletonCache[skeletonHash] = skeleton
 
         val modelCacheData = importNode(rootNode, meshes)
         modelCacheData.skeletonHash = skeletonHash
@@ -204,8 +221,6 @@ class ModelLoader {
         }
     }
 
-    val loadedTextures = mutableMapOf<String, Texture>()
-
     fun importMaterialTexture(material: AIMaterial, type: Int, scene: AIScene, modelDirectory: Path): List<Texture> {
         val count = aiGetMaterialTextureCount(material, type)
         val textures = List<Texture>(count) {
@@ -235,7 +250,7 @@ class ModelLoader {
 
             val texPath = pathBuffer.dataString()
 
-            val texture = loadedTextures.getOrPut(texPath) {
+            val texture = textureCache.getOrPut(texPath) {
                 if (texPath.startsWith("*")) {
                     // Embedded texture
                     val embeddedIndex = texPath.substring(1).toInt()
@@ -319,7 +334,19 @@ class ModelLoader {
         return Mesh(vertices, indices, material, meshBones)
     }
 
-    fun importSkeleton(
+    fun buildBoneNodeMap(
+        boneNode: BoneNode,
+        boneNames: Set<String>,
+        boneMap: MutableMap<String, BoneNode> = mutableMapOf()
+    ): MutableMap<String, BoneNode> {
+        if (boneNode.name in boneNames) {
+            boneMap[boneNode.name] = boneNode
+        }
+        boneNode.children.forEach { buildBoneNodeMap(it, boneNames, boneMap) }
+        return boneMap
+    }
+
+    fun importBoneNodes(
         boneNames: Set<String>,
         node: AINode,
         parentGlobalTransform: Matrix4f = Matrix4f(),
@@ -332,7 +359,7 @@ class ModelLoader {
 
         var children = List(node.mNumChildren()) { i ->
             val childNode = AINode.create(node.mChildren()!![i])
-            importSkeleton(boneNames, childNode, globalTransform)
+            importBoneNodes(boneNames, childNode, globalTransform)
         }
 
         val boneNode = BoneNode(
@@ -345,6 +372,48 @@ class ModelLoader {
             child.parent = boneNode
         }
         return boneNode
+    }
+
+    fun importAnimation(
+        animation: AIAnimation
+    ): Animation {
+        val nodeAnimations = List(animation.mNumChannels()) { channelIndex ->
+            val nodeAnim = AINodeAnim.create(animation.mChannels()!![channelIndex])
+
+            val nodeName = nodeAnim.mNodeName().dataString()
+
+            val positionKeys = List(nodeAnim.mNumPositionKeys()) {
+                val vec = nodeAnim.mPositionKeys()!![it].mValue()
+                val time = nodeAnim.mPositionKeys()!![it].mTime()
+                Keyframe(time, Vector3f(vec.x(), vec.y(), vec.z()))
+            }
+
+            val rotationKeys = List(nodeAnim.mNumRotationKeys()) {
+                val quat = nodeAnim.mRotationKeys()!![it].mValue()
+                val time = nodeAnim.mRotationKeys()!![it].mTime()
+                Keyframe(time, Quaternionf(quat.x(), quat.y(), quat.z(), quat.w()))
+            }
+
+            val scaleKeys = List(nodeAnim.mNumScalingKeys()) {
+                val vec = nodeAnim.mScalingKeys()!![it].mValue()
+                val time = nodeAnim.mScalingKeys()!![it].mTime()
+                Keyframe(time, Vector3f(vec.x(), vec.y(), vec.z()))
+            }
+
+            NodeAnimation(
+                nodeName,
+                positionKeys,
+                rotationKeys,
+                scaleKeys
+            )
+        }.associateBy { it.nodeName }
+
+        return Animation(
+            animation.mName().dataString(),
+            animation.mDuration(),
+            animation.mTicksPerSecond(),
+            nodeAnimations
+        )
     }
 
     fun importNode(
