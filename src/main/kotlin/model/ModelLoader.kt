@@ -372,8 +372,8 @@ class ModelLoader {
             node.mName().dataString(),
             childrenData,
             nodeMeshes,
-            //localTransform
-            modelTransform,
+            localTransform
+            //modelTransform,
         )
     }
 }

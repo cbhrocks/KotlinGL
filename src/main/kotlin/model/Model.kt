@@ -1,11 +1,13 @@
 package org.kotlingl.model
 
 import org.joml.Matrix4f
+import org.joml.Matrix4fc
 import org.joml.Quaternionf
 import org.kotlingl.entity.Intersection
 import org.kotlingl.shapes.Ray
 
 import org.joml.Vector3f
+import org.kotlingl.math.TrackedMatrix
 import org.kotlingl.shapes.AABB
 import org.kotlingl.shapes.Bounded
 import org.kotlingl.shapes.Intersectable
@@ -26,16 +28,16 @@ class Model(
     var children: MutableList<Model> = mutableListOf(),
     modelM: Matrix4f = Matrix4f()
 ): Intersectable {
-    var modelM = modelM
+    var modelM = TrackedMatrix(modelM)
         private set
     var modelMInverse: Matrix4f = modelM.invert(Matrix4f())
         private set
     val position: Vector3f
-        get() = modelM.getTranslation(Vector3f())
+        get() = modelM.getRef().getTranslation(Vector3f())
     val rotation: Quaternionf
-        get() = modelM.getNormalizedRotation(Quaternionf())
+        get() = modelM.getRef().getNormalizedRotation(Quaternionf())
     val scale: Vector3f
-        get() = modelM.getScale(Vector3f())
+        get() = modelM.getRef().getScale(Vector3f())
 
     val bvhTree: BVHTree by lazy {
         BVHTree.buildForModel(this)
@@ -44,8 +46,8 @@ class Model(
     fun transform(
         modelMatrix: Matrix4f
     ) {
-        this.modelM = modelMatrix
-        this.modelM.invert(this.modelMInverse)
+        this.modelM.set(modelMatrix)
+        this.modelM.getRef().invert(this.modelMInverse)
     }
 
     fun transform(
@@ -53,13 +55,29 @@ class Model(
         rotation: Quaternionf = this.rotation,
         scale: Vector3f = this.scale
     ) {
-        this.modelM.translationRotateScale(
-            position,
-            rotation,
-            scale
-        )
-        this.modelM.invert(this.modelMInverse)
+        this.modelM.mutate {
+            translationRotateScale(
+                position,
+                rotation,
+                scale
+            )
+            invert(modelMInverse)
+        }
     }
+
+    //fun update(parentMatrix: Matrix4fc? = null) {
+    //    // Compute world matrix
+    //    val worldMatrix = parentMatrix?.mul(modelM.getRef(), Matrix4f()) ?: modelM.getRef()
+    //    this.worldMatrix = worldMatrix
+
+    //    // Update own BVH with current transform
+    //    bvhTree.refit(worldMatrix)
+
+    //    // Recurse into children
+    //    for (child in children) {
+    //        child.update(worldMatrix)
+    //    }
+    //}
 
     fun addChild(model: Model) {
         this.children.add(model)

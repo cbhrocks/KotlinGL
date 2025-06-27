@@ -48,7 +48,7 @@ class Mesh(
 
     override fun intersects(ray: Ray): Intersection? {
         //return this.bvhNode.intersects(ray)
-        return this.triangles.mapNotNull { it.intersects(ray) }.minBy { it.t }
+        return this.triangles.mapNotNull { it.intersects(ray) }.minByOrNull { it.t }
     }
 
     override fun computeAABB(): AABB {
