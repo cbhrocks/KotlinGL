@@ -84,7 +84,7 @@ class BVHTree(val root: BVHNode) {
             val aabb = childNodes.map {
                 it.getLocalAABB()
             }.reduce(::surroundingBox)
-            return BVHGroup(aabb, childNodes, model.modelM)
+            return BVHGroup(aabb, childNodes, model.sharedMatrix)
         }
     }
 }

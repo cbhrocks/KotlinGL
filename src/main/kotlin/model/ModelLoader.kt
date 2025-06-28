@@ -43,7 +43,6 @@ class ModelLoader {
     val skeletonCache: MutableMap<Int, Skeleton> = mutableMapOf()
     // textures loaded from files
     val textureCache = mutableMapOf<String, Texture>()
-    val animationCache = mutableMapOf<String, NodeAnimation>()
 
 
     private fun normalizePath(path: String): String =
@@ -119,6 +118,7 @@ class ModelLoader {
         val meshes = aiMeshes.map {
             importMesh(it, materials[it.mMaterialIndex()])
         }
+
         val boneNames = aiMeshes.map { aiMesh ->
             List(aiMesh.mNumBones()) { i ->
                 AIBone.create(aiMesh.mBones()!![i])
@@ -133,12 +133,18 @@ class ModelLoader {
 
         val rootBoneNode = importBoneNodes(boneNames, rootNode)
         val boneMap = buildBoneNodeMap(rootBoneNode, boneNames)
+        val inverseBindPoseMap = meshes.map { mesh ->
+            mesh.bones.associate {
+                it.name to it.offsetMatrix
+            }
+        }
 
         val skeleton = Skeleton(
             scene.mRootNode()?.mName()?.dataString() ?: "UnnamedSkeleton",
             rootBoneNode,
             boneMap,
-            animations
+            animations,
+            inverseBindPoseMap
         )
 
         val skeletonHash = skeleton.hashCode()
@@ -384,19 +390,19 @@ class ModelLoader {
 
             val positionKeys = List(nodeAnim.mNumPositionKeys()) {
                 val vec = nodeAnim.mPositionKeys()!![it].mValue()
-                val time = nodeAnim.mPositionKeys()!![it].mTime()
+                val time = nodeAnim.mPositionKeys()!![it].mTime().toFloat()
                 Keyframe(time, Vector3f(vec.x(), vec.y(), vec.z()))
             }
 
             val rotationKeys = List(nodeAnim.mNumRotationKeys()) {
                 val quat = nodeAnim.mRotationKeys()!![it].mValue()
-                val time = nodeAnim.mRotationKeys()!![it].mTime()
+                val time = nodeAnim.mRotationKeys()!![it].mTime().toFloat()
                 Keyframe(time, Quaternionf(quat.x(), quat.y(), quat.z(), quat.w()))
             }
 
             val scaleKeys = List(nodeAnim.mNumScalingKeys()) {
                 val vec = nodeAnim.mScalingKeys()!![it].mValue()
-                val time = nodeAnim.mScalingKeys()!![it].mTime()
+                val time = nodeAnim.mScalingKeys()!![it].mTime().toFloat()
                 Keyframe(time, Vector3f(vec.x(), vec.y(), vec.z()))
             }
 
@@ -410,8 +416,8 @@ class ModelLoader {
 
         return Animation(
             animation.mName().dataString(),
-            animation.mDuration(),
-            animation.mTicksPerSecond(),
+            animation.mDuration().toFloat(),
+            animation.mTicksPerSecond().toFloat(),
             nodeAnimations
         )
     }

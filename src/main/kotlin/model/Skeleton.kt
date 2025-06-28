@@ -59,7 +59,8 @@ data class Skeleton(
     val name: String,
     val root: BoneNode,
     val boneMap: Map<String, BoneNode>,
-    val animations: Map<String, Animation>
+    val animations: Map<String, Animation>,
+    val inverseBindPoseMap: Map<String, Matrix4f>
 ) {
     override fun hashCode(): Int = root.hashCode()
 

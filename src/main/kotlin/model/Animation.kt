@@ -5,12 +5,12 @@ import org.joml.Vector3f
 
 data class Animation(
     val name: String,
-    val duration: Double,
-    val ticksPerSecond: Double,
+    val duration: Float,
+    val ticksPerSecond: Float,
     val nodeAnimations: Map<String, NodeAnimation>
 )
 
-data class Keyframe<T>(val time: Double, val value: T)
+data class Keyframe<T>(val time: Float, val value: T)
 
 data class NodeAnimation(
     val nodeName: String,

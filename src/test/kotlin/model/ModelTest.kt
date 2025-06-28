@@ -6,17 +6,12 @@ import org.joml.Vector3f
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
-import org.kotlingl.entity.Intersection
 import org.kotlingl.entity.Material
-import org.kotlingl.model.BVHNode
 import org.kotlingl.model.BoneNode
 import org.kotlingl.model.Mesh
 import org.kotlingl.model.Model
 import org.kotlingl.model.Vertex
-import org.kotlingl.shapes.AABB
-import org.kotlingl.shapes.Bounded
 import org.kotlingl.shapes.Ray
-import org.kotlingl.shapes.Triangle
 import kotlin.math.PI
 import kotlin.test.assertIs
 
@@ -131,7 +126,7 @@ class ModelTest {
 
     @Test
     fun `transform updates models position rotation and scale`() {
-        val oldMatrix = parentModel.modelM.clone()
+        val oldMatrix = parentModel.sharedMatrix.clone()
         val newPosition = Vector3f(1f, 1f, 1f)
         val newRotation = Quaternionf().rotateY(PI.toFloat())
         val newScale = Vector3f(2f, 2f, 2f)
@@ -139,7 +134,7 @@ class ModelTest {
         assertEquals(parentModel.position, newPosition)
         assertEquals(parentModel.rotation, newRotation)
         assertEquals(parentModel.scale, newScale)
-        assertNotEquals(parentModel.modelM, oldMatrix)
+        assertNotEquals(parentModel.sharedMatrix, oldMatrix)
     }
 
     @Test
