@@ -8,6 +8,7 @@ import org.kotlingl.entity.Material
 import org.kotlingl.entity.Texture
 import org.kotlingl.entity.WrapMode
 import org.kotlingl.entity.toColor
+import org.kotlingl.math.TrackedMatrix
 import org.kotlingl.math.toJoml
 import org.lwjgl.BufferUtils
 import org.lwjgl.assimp.*
@@ -29,10 +30,15 @@ import kotlin.io.path.toPath
 
 data class ModelCacheData (
     val name: String,
-    val children: List<ModelCacheData>,
+    val nodeToMeshIndices: MutableMap<String, List<Int>>,
     val meshes: List<Mesh>,
     val modelTransform: Matrix4f,
-    var skeletonHash: Int? = null
+    var skeletonHash: Int
+)
+
+data class NodeTraversalData (
+    val boneNode: BoneNode,
+    val nodeToMeshIndices: MutableMap<String, List<Int>>,
 )
 
 class ModelLoader {
@@ -58,8 +64,8 @@ class ModelLoader {
         return Model(
             modelData.name,
             modelData.meshes,
-            skeletonCache[modelData.skeletonHash],
-            modelData.children.map {buildModel(it)}.toMutableList(),
+            skeletonCache.getValue(modelData.skeletonHash).copy(),
+            modelData.nodeToMeshIndices,
             modelData.modelTransform
         )
     }
@@ -81,7 +87,7 @@ class ModelLoader {
                     aiProcess_GenSmoothNormals or
                     aiProcess_JoinIdenticalVertices or
                     aiProcess_SortByPType or
-                    aiProcess_LimitBoneWeights or
+                    //aiProcess_LimitBoneWeights or
                     aiProcess_ImproveCacheLocality or
                     aiProcess_RemoveRedundantMaterials or
                     //aiProcess_FlipUVs or
@@ -123,7 +129,7 @@ class ModelLoader {
             List(aiMesh.mNumBones()) { i ->
                 AIBone.create(aiMesh.mBones()!![i])
             }.map {
-                it.mName().toString()
+                it.mName().dataString()
             }
         }.flatten().toSet()
 
@@ -131,17 +137,17 @@ class ModelLoader {
         val aiAnimations = List(animCount) { i -> AIAnimation.create(scene.mAnimations()!![i]) }
         val animations = aiAnimations.map {importAnimation(it)}.associateBy{it.name}
 
-        val rootBoneNode = importBoneNodes(boneNames, rootNode)
-        val boneMap = buildBoneNodeMap(rootBoneNode, boneNames)
+        val nodeData = walkNodes(boneNames, rootNode)
+        val boneMap = buildBoneNodeMap(nodeData.boneNode, boneNames)
         val inverseBindPoseMap = meshes.map { mesh ->
             mesh.bones.associate {
                 it.name to it.offsetMatrix
             }
-        }
+        }.reduce { acc, map -> acc + map }
 
         val skeleton = Skeleton(
             scene.mRootNode()?.mName()?.dataString() ?: "UnnamedSkeleton",
-            rootBoneNode,
+            nodeData.boneNode,
             boneMap,
             animations,
             inverseBindPoseMap
@@ -150,7 +156,13 @@ class ModelLoader {
         val skeletonHash = skeleton.hashCode()
         skeletonCache[skeletonHash] = skeleton
 
-        val modelCacheData = importNode(rootNode, meshes)
+        val modelCacheData = ModelCacheData(
+            nodeData.boneNode.name,
+            nodeData.nodeToMeshIndices,
+            meshes,
+            Matrix4f(),
+            skeletonHash
+        )
         modelCacheData.skeletonHash = skeletonHash
         modelCache[resourcePath] = modelCacheData
 
@@ -323,6 +335,7 @@ class ModelLoader {
                 indices += face.mIndices()[k]
             }
         }
+        println(aiMesh.mNumBones())
 
         val meshBones = List(aiMesh.mNumBones()) { i ->
             val aiBone = AIBone.create(aiMesh.mBones()!![i])
@@ -352,32 +365,42 @@ class ModelLoader {
         return boneMap
     }
 
-    fun importBoneNodes(
+    fun walkNodes(
         boneNames: Set<String>,
         node: AINode,
         parentGlobalTransform: Matrix4f = Matrix4f(),
-    ): BoneNode {
+    ): NodeTraversalData {
         val name = node.mName().dataString()
         // where each bone/model is relative to it's parent
         val localTransform = node.mTransformation().toJoml()
         // where each bone is in world space
         val globalTransform = parentGlobalTransform.mul(localTransform, Matrix4f())
 
-        var children = List(node.mNumChildren()) { i ->
+        var childNodeData = List(node.mNumChildren()) { i ->
             val childNode = AINode.create(node.mChildren()!![i])
-            importBoneNodes(boneNames, childNode, globalTransform)
+            walkNodes(boneNames, childNode, globalTransform)
+        }
+        val nodeToMeshIndices = mutableMapOf(name to List(node.mNumMeshes()) { i ->
+            node.mMeshes()!!.get(i)
+        })
+        childNodeData.forEach {
+            nodeToMeshIndices.putAll(it.nodeToMeshIndices)
         }
 
         val boneNode = BoneNode(
             name,
-            localTransform,
+            TrackedMatrix(localTransform),
             globalTransform,
-            children,
+            boneNames.contains(name),
+            childNodeData.map{it.boneNode}
         )
         for (child in boneNode.children) {
             child.parent = boneNode
         }
-        return boneNode
+        return NodeTraversalData(
+            boneNode,
+            nodeToMeshIndices,
+        )
     }
 
     fun importAnimation(
@@ -419,36 +442,6 @@ class ModelLoader {
             animation.mDuration().toFloat(),
             animation.mTicksPerSecond().toFloat(),
             nodeAnimations
-        )
-    }
-
-    fun importNode(
-        node: AINode,
-        meshes: List<Mesh>,
-        parentModelTransform: Matrix4f = Matrix4f(),
-    ): ModelCacheData {
-        // where each bone/model is relative to it's parent
-        val localTransform = node.mTransformation().toJoml()
-        // where each model is in world space
-        val modelTransform = Matrix4f(parentModelTransform).mul(localTransform, Matrix4f())
-        println("${node.mName().dataString()} translation: ${modelTransform.getTranslation(Vector3f())}")
-        println("${node.mName().dataString()} scale: ${modelTransform.getScale(Vector3f())}")
-
-        val childrenData = List(node.mNumChildren()) { i ->
-            val childNode = AINode.create(node.mChildren()!![i])
-            importNode(childNode, meshes, modelTransform)
-        }
-
-        val nodeMeshes = List(node.mNumMeshes()) { i ->
-            meshes[node.mMeshes()!![i]]
-        }
-
-        return ModelCacheData(
-            node.mName().dataString(),
-            childrenData,
-            nodeMeshes,
-            localTransform
-            //modelTransform,
         )
     }
 }

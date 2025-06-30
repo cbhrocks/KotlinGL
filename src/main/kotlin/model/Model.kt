@@ -22,8 +22,8 @@ import org.kotlingl.shapes.Intersectable
 class Model(
     val name: String,
     val meshes: List<Bounded>,
-    val skeleton: Skeleton? = null,
-    var children: MutableList<Model> = mutableListOf(),
+    val skeleton: Skeleton,
+    val nodeToMeshIndices: MutableMap<String, List<Int>> = mutableMapOf(),
     modelMatrix: Matrix4f = Matrix4f()
 ): Intersectable {
     var modelMatrix: Matrix4f = modelMatrix
@@ -68,8 +68,9 @@ class Model(
     }
 
     fun updateBoneMatrices() {
-        this.boneMatrixMap.clear()
-        //updateBoneMatricesRecursive()
+        this.localBoneMatrixMap.clear()
+        this.globalBoneMatrixMap.clear()
+        updateBoneMatricesRecursive()
     }
 
     fun updateBoneMatricesRecursive(
@@ -79,7 +80,7 @@ class Model(
         localMap: MutableMap<String, Matrix4f>,
         globalMap: MutableMap<String, Matrix4f>
     ) {
-        val local = boneNode.localTransform
+        val local = boneNode.localTransform.getRef()
         val global = Matrix4f(parentTransform).mul(local)
 
         localMap[boneNode.name] = Matrix4f(local)
@@ -109,16 +110,10 @@ class Model(
     //    }
     //}
 
-    fun addChild(model: Model) {
-        this.children.add(model)
-    }
-
     override fun intersects(ray: Ray): Intersection? {
-        return this.bvhTree.intersects(ray)
-    }
-
-    fun allMeshes(): List<Bounded> {
-        return meshes + children.flatMap { it.allMeshes() }
+        val localRay = ray.transformedBy(modelMInverse)
+        val localHit = this.bvhTree.intersects(localRay)
+        return localHit?.transformedBy(modelMatrix)
     }
 
     /* for when rasterization is implemented
@@ -155,10 +150,9 @@ class SkeletonAnimator(val skeleton: Skeleton) {
             val rotation = interpolateKeyframes(time, nodeAnim.rotationKeys)
             val scale = interpolateKeyframes(time, nodeAnim.scaleKeys)
 
-            boneNode.localTransform = Matrix4f()
-                .translate(position)
-                .rotate(rotation)
-                .scale(scale)
+            boneNode.localTransform.mutate {
+                translationRotateScale(position, rotation, scale)
+            }
         }
 
         // After setting local transforms, propagate global transforms
@@ -185,7 +179,7 @@ class SkeletonAnimator(val skeleton: Skeleton) {
     }
 
     fun updateGlobalTransforms(node: BoneNode, parentTransform: Matrix4f = Matrix4f()) {
-        node.globalTransform = Matrix4f(parentTransform).mul(node.localTransform)
+        node.globalTransform = Matrix4f(parentTransform).mul(node.localTransform.getRef())
         node.children.forEach { updateGlobalTransforms(it, node.globalTransform) }
     }
 }

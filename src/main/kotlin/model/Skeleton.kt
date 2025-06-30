@@ -1,6 +1,7 @@
 package org.kotlingl.model
 
 import org.joml.Matrix4f
+import org.kotlingl.math.TrackedMatrix
 
 data class VertexWeight(
     val vertexId: Int,
@@ -25,14 +26,15 @@ data class Bone (
  */
 data class BoneNode(
     val name: String,
-    var localTransform: Matrix4f, // Local transform (T * R * S)
+    var localTransform: TrackedMatrix, // Local transform (T * R * S)
     var globalTransform: Matrix4f = Matrix4f(), // Computed during animation
+    var isBone: Boolean = false,
     val children: List<BoneNode> = listOf(),
     var parent: BoneNode? = null,
 ) {
     override fun hashCode(): Int {
         var result = name.hashCode()
-        result = 31 * result + localTransform.hashCode()
+        result = 31 * result + localTransform.getRef().hashCode()
         for (child in children) {
             result = 31 * result + child.hashCode()
         }
