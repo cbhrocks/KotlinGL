@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.kotlingl.entity.Material
-import org.kotlingl.model.BoneNode
+import org.kotlingl.model.SkeletonNode
 import org.kotlingl.model.Mesh
 import org.kotlingl.model.Model
 import org.kotlingl.model.Vertex
@@ -175,8 +175,8 @@ class ModelTest {
 
     @Test
     fun `model can be constructed with skeleton`() {
-        val boneNode = BoneNode(name = "root", localTransform = Matrix4f(), globalTransform = Matrix4f())
-        val model = Model(name = "skelModel", meshes = listOf(), children = mutableListOf(), skeleton = boneNode)
+        val skeletonNode = SkeletonNode(name = "root", localTransform = Matrix4f(), globalTransform = Matrix4f())
+        val model = Model(name = "skelModel", meshes = listOf(), children = mutableListOf(), skeleton = skeletonNode)
 
         assertEquals("root", model.skeleton?.name)
     }

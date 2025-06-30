@@ -4,14 +4,15 @@ import org.kotlingl.entity.ColorRGB
 import org.kotlingl.entity.Intersection
 import org.kotlingl.lighting.Shader
 import org.kotlingl.lights.Light
-import org.kotlingl.shapes.Ray
 import org.kotlingl.shapes.Intersectable
+import org.kotlingl.shapes.Ray
+import org.kotlingl.shapes.Updatable
 
 data class Scene(
     var shader: Shader,
     var cameras: MutableList<Camera> = mutableListOf<Camera>(Camera()),
     var lights: MutableList<Light> = mutableListOf<Light>(),
-    var shapes: MutableList<Intersectable> = mutableListOf<Intersectable>(),
+    var sceneObjects: MutableList<Any> = mutableListOf(),
     var activeCameraIndex: Int = 0
 ) {
     val activeCamera
@@ -24,16 +25,8 @@ data class Scene(
     }
 
     fun intersect(ray: Ray): Intersection? {
-        var closestHit: Intersection? = null
-        for (shape in shapes) {
-            val hit = shape.intersects(ray)
-            if (hit != null) {
-                if (closestHit == null || hit.t < closestHit.t) {
-                    closestHit = hit
-                }
-            }
-        }
-        return closestHit
+        return sceneObjects.mapNotNull { (it as? Intersectable)?.intersects(ray) }
+            .minByOrNull { it.t }
     }
 
     fun traceRay(ray: Ray, depth: Int = 0): ColorRGB {
@@ -43,5 +36,10 @@ data class Scene(
             return shader.shade(intersection, this, depth)
         }
         return ColorRGB(50, 50, 50)
+    }
+
+    fun update(timeDelta: Float) {
+        return sceneObjects.mapNotNull { it as? Updatable }
+            .forEach { it.update(timeDelta) }
     }
 }

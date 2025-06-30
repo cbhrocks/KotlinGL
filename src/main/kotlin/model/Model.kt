@@ -9,6 +9,7 @@ import org.joml.Vector3f
 import org.kotlingl.math.TrackedMatrix
 import org.kotlingl.shapes.Bounded
 import org.kotlingl.shapes.Intersectable
+import org.kotlingl.shapes.Updatable
 
 /**
  * @property modelMatrix Model matrix transforms vertices from model space into parent's space. If there is no parent then into World space.
@@ -25,15 +26,13 @@ class Model(
     val skeleton: Skeleton,
     val nodeToMeshIndices: MutableMap<String, List<Int>> = mutableMapOf(),
     modelMatrix: Matrix4f = Matrix4f()
-): Intersectable {
+): Intersectable, Updatable {
     var modelMatrix: Matrix4f = modelMatrix
         private set
     var sharedMatrix = TrackedMatrix(modelMatrix)
         private set
     var modelMInverse: Matrix4f = modelMatrix.invert(Matrix4f())
         private set
-    val localBoneMatrixMap: MutableMap<String, Matrix4f> = mutableMapOf()
-    val globalBoneMatrixMap: MutableMap<String, Matrix4f> = mutableMapOf()
     val position: Vector3f
         get() = this@Model.sharedMatrix.getRef().getTranslation(Vector3f())
     val rotation: Quaternionf
@@ -43,7 +42,7 @@ class Model(
     val bvhTree: BVHTree by lazy {
         BVHTree.buildForModel(this)
     }
-    val skeletonAnimator: SkeletonAnimator? = skeleton?.let { SkeletonAnimator(it) }
+    val skeletonAnimator: SkeletonAnimator = SkeletonAnimator(skeleton)
 
     fun transform(
         modelMatrix: Matrix4f
@@ -67,33 +66,9 @@ class Model(
         }
     }
 
-    fun updateBoneMatrices() {
-        this.localBoneMatrixMap.clear()
-        this.globalBoneMatrixMap.clear()
-        updateBoneMatricesRecursive()
-    }
-
-    fun updateBoneMatricesRecursive(
-        boneNode: BoneNode,
-        parentTransform: Matrix4f,
-        skeleton: Skeleton,
-        localMap: MutableMap<String, Matrix4f>,
-        globalMap: MutableMap<String, Matrix4f>
-    ) {
-        val local = boneNode.localTransform.getRef()
-        val global = Matrix4f(parentTransform).mul(local)
-
-        localMap[boneNode.name] = Matrix4f(local)
-        val finalTransform = Matrix4f(global).mul(skeleton.inverseBindPoseMap[boneNode.name])
-        globalMap[boneNode.name] = finalTransform
-
-        boneNode.children.forEach { updateBoneMatricesRecursive(
-            it, global, skeleton, localMap, globalMap
-        ) }
-    }
-
-    fun update() {
-
+    override fun update(timeDelta: Float) {
+        skeletonAnimator.update(timeDelta)
+        bvhTree.refit()
     }
 
     //fun update(parentMatrix: Matrix4fc? = null) {
@@ -144,7 +119,7 @@ class SkeletonAnimator(val skeleton: Skeleton) {
 
     fun applyAnimationToSkeleton(skeleton: Skeleton, animation: Animation, time: Float) {
         for ((boneName, nodeAnim) in animation.nodeAnimations) {
-            val boneNode = skeleton.boneMap[boneName] ?: continue
+            val boneNode = skeleton.nodeMap[boneName] ?: continue
 
             val position = interpolateKeyframes(time, nodeAnim.positionKeys)
             val rotation = interpolateKeyframes(time, nodeAnim.rotationKeys)
@@ -178,8 +153,11 @@ class SkeletonAnimator(val skeleton: Skeleton) {
         } as T
     }
 
-    fun updateGlobalTransforms(node: BoneNode, parentTransform: Matrix4f = Matrix4f()) {
+    fun updateGlobalTransforms(node: SkeletonNode, parentTransform: Matrix4f = Matrix4f()) {
         node.globalTransform = Matrix4f(parentTransform).mul(node.localTransform.getRef())
+        if (node.isBone) {
+            node.finalTransform = Matrix4f(node.globalTransform).mul(skeleton.inverseBindPoseMap.getValue(node.name))
+        }
         node.children.forEach { updateGlobalTransforms(it, node.globalTransform) }
     }
 }

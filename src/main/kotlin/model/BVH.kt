@@ -64,11 +64,11 @@ class BVHTree(val root: BVHNode) {
             return BVHTree(buildBVHForModel(model, model.skeleton.root))
         }
 
-        private fun buildBVHForModel(model: Model, boneNode: BoneNode): BVHNode {
+        private fun buildBVHForModel(model: Model, skeletonNode: SkeletonNode): BVHNode {
             val childNodes = mutableListOf<BVHNode>()
 
             // Create leaf nodes for each mesh
-            for (meshIndex in model.nodeToMeshIndices.getValue(boneNode.name)) {
+            for (meshIndex in model.nodeToMeshIndices.getValue(skeletonNode.name)) {
                 val mesh = model.meshes[meshIndex]
                 val localAABB = mesh.computeAABB()
                 //val worldAABB = model.modelM.let { localAABB.transformedBy(it.getRef()) }
@@ -76,7 +76,7 @@ class BVHTree(val root: BVHNode) {
             }
 
             // Recursively build child BVH groups
-            for (node in boneNode.children) {
+            for (node in skeletonNode.children) {
                 childNodes.add(buildBVHForModel(model, node))
             }
 
@@ -85,7 +85,7 @@ class BVHTree(val root: BVHNode) {
             val aabb = childNodes.map {
                 it.getLocalAABB()
             }.reduce(::surroundingBox)
-            return BVHGroup(aabb, childNodes, boneNode.localTransform)
+            return BVHGroup(aabb, childNodes, skeletonNode.localTransform)
         }
     }
 }

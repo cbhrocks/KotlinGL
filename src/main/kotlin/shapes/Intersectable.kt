@@ -10,6 +10,10 @@ interface Intersectable {
     fun intersects(ray: Ray): Intersection?
 }
 
+interface Updatable {
+    fun update(timeDelta: Float)
+}
+
 interface Bounded : Intersectable {
     //fun getBVHNode(): BVHNode
     fun computeAABB(): AABB

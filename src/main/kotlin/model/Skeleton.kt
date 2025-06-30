@@ -24,13 +24,14 @@ data class Bone (
  *
  * @property name used to link the BoneNode object various bones that use the animation transforms.
  */
-data class BoneNode(
+data class SkeletonNode(
     val name: String,
     var localTransform: TrackedMatrix, // Local transform (T * R * S)
     var globalTransform: Matrix4f = Matrix4f(), // Computed during animation
+    var finalTransform: Matrix4f? = null, // only used if isBone is true. computed by globalTransform * inverseBindPose
     var isBone: Boolean = false,
-    val children: List<BoneNode> = listOf(),
-    var parent: BoneNode? = null,
+    val children: List<SkeletonNode> = listOf(),
+    var parent: SkeletonNode? = null,
 ) {
     override fun hashCode(): Int {
         var result = name.hashCode()
@@ -45,7 +46,7 @@ data class BoneNode(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as BoneNode
+        other as SkeletonNode
 
         if (name != other.name) return false
         if (localTransform != other.localTransform) return false
@@ -55,12 +56,28 @@ data class BoneNode(
 
         return true
     }
+
+    fun deepCopy(): SkeletonNode {
+        val copied = SkeletonNode(
+            this.name,
+            localTransform = TrackedMatrix(this.localTransform.get()),
+            globalTransform = Matrix4f(this.globalTransform),
+            isBone = this.isBone,
+            children = this.children.map { it.deepCopy() },
+        )
+        copied.children.forEach { it.parent = copied }
+        return copied
+    }
+
+    fun flatten(): List<SkeletonNode> {
+        return listOf(this) + children.flatMap { it.flatten() }
+    }
 }
 
 data class Skeleton(
     val name: String,
-    val root: BoneNode,
-    val boneMap: Map<String, BoneNode>,
+    val root: SkeletonNode,
+    val nodeMap: Map<String, SkeletonNode>,
     val animations: Map<String, Animation>,
     val inverseBindPoseMap: Map<String, Matrix4f>
 ) {
@@ -74,9 +91,21 @@ data class Skeleton(
 
         if (name != other.name) return false
         if (root != other.root) return false
-        if (boneMap != other.boneMap) return false
+        if (nodeMap != other.nodeMap) return false
         if (animations != other.animations) return false
 
         return true
+    }
+
+    fun deepCopy(): Skeleton {
+        val newRoot = this.root.deepCopy()
+
+        return Skeleton(
+            this.name,
+            newRoot,
+            newRoot.flatten().associateBy { it.name },
+            this.animations,
+            this.inverseBindPoseMap
+        )
     }
 }

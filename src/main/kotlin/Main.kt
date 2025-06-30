@@ -1,21 +1,16 @@
 package org.kotlingl
 
 import org.joml.Quaternionf
-import org.joml.Vector2f
 import org.joml.Vector3f
-import org.joml.times
-import org.kotlingl.entity.ColorRGB
-import org.kotlingl.entity.Material
-import org.kotlingl.entity.Texture
-import org.kotlingl.entity.WrapMode
 import org.kotlingl.lighting.*
-import org.kotlingl.lights.DirectionalLight
-import org.kotlingl.model.Model
 import org.kotlingl.model.ModelLoader
-import org.kotlingl.model.Vertex
-import org.kotlingl.shapes.Plane
-import org.kotlingl.shapes.Sphere
-import org.kotlingl.shapes.Triangle
+import org.kotlingl.FrameTimer
+import org.kotlingl.renderer.ModelRenderer
+import org.kotlingl.WindowManager
+import org.lwjgl.Version
+import org.lwjgl.glfw.GLFW
+import org.lwjgl.glfw.GLFWErrorCallback
+import org.lwjgl.opengl.GL
 import kotlin.math.PI
 
 fun main() {
@@ -39,12 +34,13 @@ fun main() {
     blockyChar.transform(
         rotation = Quaternionf().rotateY(PI.toFloat())//.rotateX(PI.toFloat()/2f),
     )
-    val blockyCharOBJ = ml.createModel("blocky-character-a-obj")
-    blockyCharOBJ.transform(
-        Vector3f(1f, 0f, 0f),
+    blockyChar.skeletonAnimator.currentAnimation = blockyChar.skeleton.animations["walk"]
+    val blockyChar2 = ml.createModel("blocky-character-a")
+    blockyChar2.transform(
+        Vector3f(2f, 0f, 0f),
         rotation = Quaternionf().rotateY(PI.toFloat())//.rotateX(PI.toFloat()/2f),
     )
-    blockyCharOBJ.bvhTree.refit()
+    //blockyCharOBJ.bvhTree.refit()
 
     val scene = Scene(
         shader = Shader.Builder()
@@ -75,11 +71,11 @@ fun main() {
             //    0.7f
             //)
         ),
-        shapes = mutableListOf(
+        sceneObjects = mutableListOf(
             spider,
             //box,
             blockyChar,
-            blockyCharOBJ
+            blockyChar2
             //Model.fromAssimp("/models/box/box.obj").apply {
             //    transform(
             //        Vector3f(0f, 1f, -3f),
@@ -146,5 +142,36 @@ fun main() {
         ),
     )
 
-    Renderer(scene, width, height).run()
+    // Setup an error callback. The default implementation
+    // will print the error message in System.err.
+    GLFWErrorCallback.createPrint(System.err).set()
+
+    // Initialize GLFW. Most GLFW functions will not work before doing this.
+    check(GLFW.glfwInit()) { "Unable to initialize GLFW" }
+
+    WindowManager().use { windowManager ->
+        windowManager.initWindow()
+        println("Hello LWJGL " + Version.getVersion() + "!")
+
+        scene.initGL()
+        val mr = ModelRenderer(width, height)
+
+        val timer = FrameTimer()
+        while (!windowManager.shouldClose()) {
+            timer.update()
+            val dt = timer.deltaTime
+            println("New Frame: ${timer.totalTime} (${timer.deltaTime})")
+
+            scene.update(dt)
+
+            mr.traceRays(scene, scene.activeCamera)
+
+            windowManager.pollEvents()
+            windowManager.swapBuffers()
+        }
+    }
+
+    // Terminate GLFW and free the error callback
+    GLFW.glfwTerminate()
+    GLFW.glfwSetErrorCallback(null)?.free()
 }

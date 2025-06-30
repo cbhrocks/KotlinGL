@@ -37,7 +37,8 @@ data class ModelCacheData (
 )
 
 data class NodeTraversalData (
-    val boneNode: BoneNode,
+    val skeletonNode: SkeletonNode,
+    val nodeMap: MutableMap<String, SkeletonNode>,
     val nodeToMeshIndices: MutableMap<String, List<Int>>,
 )
 
@@ -64,9 +65,9 @@ class ModelLoader {
         return Model(
             modelData.name,
             modelData.meshes,
-            skeletonCache.getValue(modelData.skeletonHash).copy(),
+            skeletonCache.getValue(modelData.skeletonHash).deepCopy(),
             modelData.nodeToMeshIndices,
-            modelData.modelTransform
+            Matrix4f(modelData.modelTransform)
         )
     }
 
@@ -138,7 +139,6 @@ class ModelLoader {
         val animations = aiAnimations.map {importAnimation(it)}.associateBy{it.name}
 
         val nodeData = walkNodes(boneNames, rootNode)
-        val boneMap = buildBoneNodeMap(nodeData.boneNode, boneNames)
         val inverseBindPoseMap = meshes.map { mesh ->
             mesh.bones.associate {
                 it.name to it.offsetMatrix
@@ -147,8 +147,8 @@ class ModelLoader {
 
         val skeleton = Skeleton(
             scene.mRootNode()?.mName()?.dataString() ?: "UnnamedSkeleton",
-            nodeData.boneNode,
-            boneMap,
+            nodeData.skeletonNode,
+            nodeData.nodeMap,
             animations,
             inverseBindPoseMap
         )
@@ -157,7 +157,7 @@ class ModelLoader {
         skeletonCache[skeletonHash] = skeleton
 
         val modelCacheData = ModelCacheData(
-            nodeData.boneNode.name,
+            nodeData.skeletonNode.name,
             nodeData.nodeToMeshIndices,
             meshes,
             Matrix4f(),
@@ -354,14 +354,14 @@ class ModelLoader {
     }
 
     fun buildBoneNodeMap(
-        boneNode: BoneNode,
+        skeletonNode: SkeletonNode,
         boneNames: Set<String>,
-        boneMap: MutableMap<String, BoneNode> = mutableMapOf()
-    ): MutableMap<String, BoneNode> {
-        if (boneNode.name in boneNames) {
-            boneMap[boneNode.name] = boneNode
+        boneMap: MutableMap<String, SkeletonNode> = mutableMapOf()
+    ): MutableMap<String, SkeletonNode> {
+        if (skeletonNode.name in boneNames) {
+            boneMap[skeletonNode.name] = skeletonNode
         }
-        boneNode.children.forEach { buildBoneNodeMap(it, boneNames, boneMap) }
+        skeletonNode.children.forEach { buildBoneNodeMap(it, boneNames, boneMap) }
         return boneMap
     }
 
@@ -369,6 +369,7 @@ class ModelLoader {
         boneNames: Set<String>,
         node: AINode,
         parentGlobalTransform: Matrix4f = Matrix4f(),
+        nodeMap: MutableMap<String, SkeletonNode> = mutableMapOf()
     ): NodeTraversalData {
         val name = node.mName().dataString()
         // where each bone/model is relative to it's parent
@@ -376,7 +377,7 @@ class ModelLoader {
         // where each bone is in world space
         val globalTransform = parentGlobalTransform.mul(localTransform, Matrix4f())
 
-        var childNodeData = List(node.mNumChildren()) { i ->
+        val childNodeData = List(node.mNumChildren()) { i ->
             val childNode = AINode.create(node.mChildren()!![i])
             walkNodes(boneNames, childNode, globalTransform)
         }
@@ -385,20 +386,23 @@ class ModelLoader {
         })
         childNodeData.forEach {
             nodeToMeshIndices.putAll(it.nodeToMeshIndices)
+            nodeMap.putAll(it.nodeMap)
         }
 
-        val boneNode = BoneNode(
+        val skeletonNode = SkeletonNode(
             name,
             TrackedMatrix(localTransform),
             globalTransform,
-            boneNames.contains(name),
-            childNodeData.map{it.boneNode}
+            isBone = boneNames.contains(name),
+            children = childNodeData.map{it.skeletonNode}
         )
-        for (child in boneNode.children) {
-            child.parent = boneNode
+        for (child in skeletonNode.children) {
+            child.parent = skeletonNode
         }
+        nodeMap.put(name, skeletonNode)
         return NodeTraversalData(
-            boneNode,
+            skeletonNode,
+            nodeMap,
             nodeToMeshIndices,
         )
     }
