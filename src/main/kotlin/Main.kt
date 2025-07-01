@@ -48,8 +48,8 @@ fun main() {
             .addStage(DiffuseStage())
             .addStage(SpecularStage())
             .build(),
-        cameras = mutableListOf(
-            Camera(
+        cameraManager = CameraManager(
+            mutableMapOf("world" to Camera(
                 // Vector3f(-1f, 1f, 120f),
                 // lookAt = Vector3f(0f, 0f, 0f),
                 //Vector3f(-0f, 50f, 200f),
@@ -57,7 +57,7 @@ fun main() {
                 lookAt = Vector3f(0f, 1f, 0f),
                 resX = width,
                 resY = height,
-            )
+            ))
         ),
         lights = mutableListOf(
             //PointLight(
@@ -152,6 +152,7 @@ fun main() {
     WindowManager().use { windowManager ->
         windowManager.initWindow()
         println("Hello LWJGL " + Version.getVersion() + "!")
+        InputManager.init(windowManager.window)
 
         scene.initGL()
         val mr = ModelRenderer(width, height)
@@ -164,7 +165,7 @@ fun main() {
 
             scene.update(dt)
 
-            mr.traceRays(scene, scene.activeCamera)
+            mr.traceRays(scene)
 
             windowManager.pollEvents()
             windowManager.swapBuffers()

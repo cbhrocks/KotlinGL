@@ -8,7 +8,8 @@ import java.nio.ByteBuffer
 
 class ModelRenderer(var width: Int, var height: Int): Renderer {
 
-    fun traceRays(scene: Scene, camera: Camera) {
+    fun traceRays(scene: Scene) {
+        val camera = scene.cameraManager.activeCamera
         val rays = camera.generateRays()
 
         // create pixel buffer

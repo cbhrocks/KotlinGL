@@ -104,3 +104,25 @@ class Camera(
         return rays
     }
 }
+
+class CameraManager(private val cameras: MutableMap<String, Camera> = mutableMapOf()) {
+    var activeCameraId: String = "main"
+
+    fun initCameras() {
+        cameras.forEach {
+            it.value.initGL()
+        }
+    }
+
+    val activeCamera: Camera
+        get() = cameras[activeCameraId] ?: error("No active camera")
+
+    fun addCamera(id: String, camera: Camera) {
+        cameras[id] = camera
+    }
+
+    fun switchTo(id: String) {
+        if (!cameras.containsKey(id)) error("No camera with id: $id")
+        activeCameraId = id
+    }
+}

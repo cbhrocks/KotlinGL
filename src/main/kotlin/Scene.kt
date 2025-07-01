@@ -10,18 +10,13 @@ import org.kotlingl.shapes.Updatable
 
 data class Scene(
     var shader: Shader,
-    var cameras: MutableList<Camera> = mutableListOf<Camera>(Camera()),
+    var cameraManager: CameraManager,
     var lights: MutableList<Light> = mutableListOf<Light>(),
     var sceneObjects: MutableList<Any> = mutableListOf(),
     var activeCameraIndex: Int = 0
 ) {
-    val activeCamera
-        get() = this.cameras[this.activeCameraIndex]
-
     fun initGL() {
-        for (camera in cameras) {
-            camera.initGL()
-        }
+        cameraManager.initCameras()
     }
 
     fun intersect(ray: Ray): Intersection? {
