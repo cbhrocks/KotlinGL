@@ -56,9 +56,16 @@ fun main() {
             .build(),
         cameraManager = CameraManager(
             mutableMapOf("world" to Camera(
-                // Vector3f(-1f, 1f, 120f),
-                // lookAt = Vector3f(0f, 0f, 0f),
-                //Vector3f(-0f, 50f, 200f),
+                Vector3f(0f, 1f, -4f),
+                lookAt = Vector3f(0f, 1f, 0f),
+                resX = width,
+                resY = height,
+            ), "background" to Camera(
+                Vector3f(0f, 1f, -4f),
+                lookAt = Vector3f(0f, 1f, 0f),
+                resX = width,
+                resY = height,
+            ), "ui" to Camera(
                 Vector3f(0f, 1f, -4f),
                 lookAt = Vector3f(0f, 1f, 0f),
                 resX = width,
@@ -103,12 +110,17 @@ fun main() {
 
         //scene.initGL()
         //val mr = ModelRenderer(width, height)
+
+        val compositor = Compositor(
+            windowManager.width,
+            windowManager.height
+        )
         val renderPipeline = RenderPipeline(
             BackgroundRenderer(),
             RayTraceRenderer(),
             WorldRenderer(),
             UIRenderer(),
-            Compositor(windowManager.width, windowManager.height)
+            compositor
         )
 
         val timer = FrameTimer()

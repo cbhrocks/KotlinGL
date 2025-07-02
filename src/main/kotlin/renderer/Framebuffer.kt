@@ -1,17 +1,6 @@
 package org.kotlingl.renderer
 
-import org.lwjgl.opengl.GL11.GL_LINEAR
-import org.lwjgl.opengl.GL11.GL_RGBA
-import org.lwjgl.opengl.GL11.GL_RGBA8
-import org.lwjgl.opengl.GL11.GL_TEXTURE_2D
-import org.lwjgl.opengl.GL11.GL_TEXTURE_MAG_FILTER
-import org.lwjgl.opengl.GL11.GL_TEXTURE_MIN_FILTER
-import org.lwjgl.opengl.GL11.GL_UNSIGNED_BYTE
-import org.lwjgl.opengl.GL11.glBindTexture
-import org.lwjgl.opengl.GL11.glDeleteTextures
-import org.lwjgl.opengl.GL11.glGenTextures
-import org.lwjgl.opengl.GL11.glTexImage2D
-import org.lwjgl.opengl.GL11.glTexParameteri
+import org.lwjgl.opengl.GL11.*
 import org.lwjgl.opengl.GL14.GL_DEPTH_COMPONENT24
 import org.lwjgl.opengl.GL30.GL_COLOR_ATTACHMENT0
 import org.lwjgl.opengl.GL30.GL_DEPTH_ATTACHMENT
@@ -28,6 +17,7 @@ import org.lwjgl.opengl.GL30.glFramebufferTexture2D
 import org.lwjgl.opengl.GL30.glGenFramebuffers
 import org.lwjgl.opengl.GL30.glGenRenderbuffers
 import org.lwjgl.opengl.GL30.glRenderbufferStorage
+import java.nio.ByteBuffer
 
 data class Framebuffer (
     val id: Int,
@@ -46,6 +36,27 @@ data class Framebuffer (
     fun resize(newWidth: Int, newHeight: Int): Framebuffer {
         destroy()
         return Framebuffer.create(newWidth, newHeight)
+    }
+
+    fun bind() {
+        glBindFramebuffer(GL_FRAMEBUFFER, id)
+        glViewport(0, 0, width, height)
+    }
+
+    fun bindTexture() {
+        glBindTexture(GL_TEXTURE_2D, textureId)
+    }
+
+    fun uploadBuffer(buffer: ByteBuffer) {
+        glBindTexture(GL_TEXTURE_2D, textureId)
+        glTexSubImage2D(
+            GL_TEXTURE_2D,
+            0, 0, 0,
+            width, height,
+            GL_RGBA,
+            GL_UNSIGNED_BYTE,
+            buffer
+        )
     }
 
     companion object {

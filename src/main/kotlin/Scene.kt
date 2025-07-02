@@ -22,6 +22,13 @@ class Layer(
     }
 }
 
+data class RayTraceContext(
+    val scene: Scene,
+    val camera: Camera,
+    val layersToCheck: Set<String>,
+    val recursionDepth: Int = 0
+)
+
 data class Scene(
     var shader: Shader,
     var cameraManager: CameraManager,
@@ -29,18 +36,18 @@ data class Scene(
     var layers: MutableMap<String, Layer> = mutableMapOf(),
     var activeCameraIndex: Int = 0
 ) {
-    fun intersect(ray: Ray, layersToCheck: Set<String>): Intersection? {
-        return layers.filterKeys{ it in layersToCheck }.values
+    fun intersect(ray: Ray, context: RayTraceContext): Intersection? {
+        return layers.filterKeys{ it in context.layersToCheck }.values
             .flatMap{it.objects}
             .mapNotNull { (it as? Intersectable)?.intersects(ray) }
             .minByOrNull { it.t }
     }
 
-    fun traceRay(ray: Ray, layersToCheck: Set<String>, depth: Int = 0): ColorRGB {
-        val intersection = this.intersect(ray, layersToCheck)
+    fun traceRay(ray: Ray, context: RayTraceContext): ColorRGB {
+        val intersection = this.intersect(ray, context)
         if (intersection != null){
             //return intersection.material.color
-            return shader.shade(intersection, this, depth, camera)
+            return shader.shade(intersection, context)
         }
         return ColorRGB(50, 50, 50)
     }

@@ -5,6 +5,6 @@ import org.kotlingl.Scene
 
 class UIRenderer: Renderer {
     override fun render(scene: Scene, camera: Camera, target: Framebuffer) {
-        TODO("Not yet implemented")
+        return
     }
 }

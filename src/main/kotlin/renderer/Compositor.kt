@@ -1,14 +1,58 @@
 package org.kotlingl.renderer
 
-import org.lwjgl.opengl.GL30.GL_FRAMEBUFFER
-import org.lwjgl.opengl.GL30.glBindFramebuffer
+import Shader
+import org.kotlingl.shapes.ScreenQuad
+import org.lwjgl.opengl.GL11
+import org.lwjgl.opengl.GL11.*
+import org.lwjgl.opengl.GL13.GL_TEXTURE0
+import org.lwjgl.opengl.GL13.glActiveTexture
+import org.lwjgl.opengl.GL30.*
+import kotlin.properties.Delegates
 
 class Compositor(val width: Int, val height: Int) {
-    val backgroundFB = Framebuffer.create(width, height)
-    val worldFB = Framebuffer.create(width, height)
-    val uiFB = Framebuffer.create(width, height)
+    private val screenQuad = ScreenQuad()
+    private val quadShader: Shader
+
+    val renderTargets = mutableMapOf(
+        "background" to Framebuffer.create(width, height),
+        "world" to Framebuffer.create(width, height),
+        "ui" to Framebuffer.create(width, height),
+    )
+
+    init {
+        val vertexSource = Shader.loadShaderSource("/shaders/fullscreen_quad.vert")
+        val fragmentSource = Shader.loadShaderSource("/shaders/fullscreen_quad.frag")
+        quadShader = Shader(vertexSource, fragmentSource)
+    }
 
     fun composeToScreen() {
+        // Bind default framebuffer (screen)
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
+
+        glViewport(0, 0, width, height)
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
+        glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
+
+        // Bind quad shader and texture
+        quadShader.use()
+        glBindVertexArray(screenQuad.vaoId)
+        glActiveTexture(GL_TEXTURE0)
+        glBindTexture(GL_TEXTURE_2D, renderTargets.getValue("background").textureId)
+        quadShader.setUniform("screenTexture", 0)
+
+        // Draw fullscreen quad
+        glDrawArrays(GL_TRIANGLES, 0, 6)
+    }
+
+    fun getTarget(renderTarget: String): Framebuffer {
+        return renderTargets.getValue(renderTarget)
+    }
+
+    fun clearBuffers() {
+        for (target in renderTargets) {
+            target.value.bind()
+            GL11.glClearColor(0f, 0f, 0f, 1f)
+            GL11.glClear(GL11.GL_COLOR_BUFFER_BIT or GL11.GL_DEPTH_BUFFER_BIT)
+        }
     }
 }

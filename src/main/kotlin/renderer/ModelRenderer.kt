@@ -1,6 +1,7 @@
 package org.kotlingl.renderer
 
 import org.kotlingl.Camera
+import org.kotlingl.RayTraceContext
 import org.kotlingl.Scene
 import org.lwjgl.glfw.GLFW
 import org.lwjgl.opengl.GL11
@@ -15,7 +16,7 @@ class ModelRenderer(var width: Int, var height: Int): Renderer {
         val pixels = ByteBuffer.allocateDirect(rays.size * 3)
         // put colors for each ray in pixel buffer
         rays.forEachIndexed { index, ray ->
-            val color = scene.traceRay("background", ray)
+            val color = scene.traceRay(ray, RayTraceContext(scene, camera, setOf("background")))
 
             pixels.put(color.r.toByte())
             pixels.put(color.g.toByte())

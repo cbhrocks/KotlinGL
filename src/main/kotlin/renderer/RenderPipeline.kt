@@ -13,10 +13,12 @@ class RenderPipeline(
     val renderOrder = listOf("background_far", "background_near", "world", "foreground", "ui")
 
     fun render(scene: Scene, cameras: CameraManager) {
-        background.render(scene, cameras.getCamera("background"), compositor.backgroundFB)
-        backgroundRayTrace.render(scene, cameras.getCamera("background"), compositor.backgroundFB)
-        world.render(scene, cameras.getCamera("world"), compositor.worldFB)
-        ui.render(scene, cameras.getCamera("ui"), compositor.uiFB)
+        compositor.clearBuffers()
+
+        background.render(scene, cameras.getCamera("background"), compositor.getTarget("background"))
+        backgroundRayTrace.render(scene, cameras.getCamera("background"), compositor.getTarget("background"))
+        world.render(scene, cameras.getCamera("world"), compositor.getTarget("world"))
+        ui.render(scene, cameras.getCamera("ui"), compositor.getTarget("ui"))
 
         compositor.composeToScreen()
     }

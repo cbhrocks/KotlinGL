@@ -1,6 +1,7 @@
 package org.kotlingl.renderer
 
 import org.kotlingl.Camera
+import org.kotlingl.RayTraceContext
 import org.kotlingl.Scene
 import org.kotlingl.entity.Texture
 import org.lwjgl.opengl.GL11.GL_RGBA
@@ -21,7 +22,9 @@ class RayTraceRenderer(): Renderer {
         val pixels = ByteBuffer.allocateDirect(rays.size * 3)
         // put colors for each ray in pixel buffer
         rays.forEachIndexed { index, ray ->
-            val color = scene.traceRay("background", ray)
+            val color = scene.traceRay(ray, RayTraceContext(
+                scene, camera, setOf("Background")
+            ))
 
             pixels.put(color.r.toByte())
             pixels.put(color.g.toByte())
@@ -42,10 +45,6 @@ class RayTraceRenderer(): Renderer {
         target: Framebuffer
     ) {
         val buffer = rayTraceScene(scene, camera)
-
-        glBindFramebuffer(GL_FRAMEBUFFER, target.id)
-        glBindTexture(GL_TEXTURE_2D, target.textureId)
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, target.width, target.height, GL_RGBA, GL_UNSIGNED_BYTE, buffer)
-        glBindFramebuffer(GL_FRAMEBUFFER, 0)
+        target.uploadBuffer(buffer)
     }
 }

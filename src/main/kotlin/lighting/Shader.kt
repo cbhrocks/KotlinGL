@@ -8,6 +8,7 @@ import org.joml.plus
 import org.joml.times
 import org.joml.unaryMinus
 import org.kotlingl.Camera
+import org.kotlingl.RayTraceContext
 import org.kotlingl.entity.Intersection
 import org.kotlingl.Scene
 import org.kotlingl.entity.ColorRGB
@@ -19,9 +20,9 @@ import kotlin.math.pow
 class Shader private constructor(
     private val stages: List<ShadingStage>
 ){
-    fun shade(hit: Intersection, scene: Scene, bounce: Int, layersToCheck: Set<String>, camera: Camera): ColorRGB {
+    fun shade(hit: Intersection, context: RayTraceContext): ColorRGB {
         return stages.fold(Vector3f(0f, 0f, 0f)) { acc, stage ->
-            acc + stage.shade(hit, scene, bounce, layersToCheck, camera)
+            acc + stage.shade(hit, context)
         }.toColor()
     }
 
@@ -38,21 +39,21 @@ class Shader private constructor(
 }
 
 interface ShadingStage {
-    fun shade(hit: Intersection, scene: Scene, bounce: Int, layersToCheck: Set<String>, camera: Camera): Vector3f
+    fun shade(hit: Intersection, context: RayTraceContext): Vector3f
 }
 
 class AmbientStage(
     val intensity: Float
 ) : ShadingStage {
-    override fun shade(hit: Intersection, scene: Scene, bounce: Int, layersToCheck: Set<String>, camera: Camera): Vector3f {
+    override fun shade(hit: Intersection, context: RayTraceContext): Vector3f {
         return (hit.material.diffuseTexture?.sample(hit.uv ?: Vector2f(0f, 0f))
             ?: hit.material.baseColor).toVector3f().mul(this.intensity)
     }
 }
 
 class DiffuseStage : ShadingStage {
-    override fun shade(hit: Intersection, scene: Scene, bounce: Int, layersToCheck: Set<String>, camera: Camera): Vector3f {
-        return scene.lights.fold(Vector3f()) { acc, light ->
+    override fun shade(hit: Intersection, context: RayTraceContext): Vector3f {
+        return context.scene.lights.fold(Vector3f()) { acc, light ->
             val lightDir = light.getDirection(hit.point)
 
             //backfacing rejection
@@ -65,7 +66,7 @@ class DiffuseStage : ShadingStage {
 
             if (light.contributesToShadows) {
                 val shadowRay = Ray(hit.point + hit.normal * EPSILON, lightDir)
-                val inShadow = scene.intersect(shadowRay, layersToCheck)?.let {
+                val inShadow = context.scene.intersect(shadowRay, context)?.let {
                     it.t < light.getDistance(hit.point)
                 } ?: false
                 if (inShadow){
@@ -84,14 +85,14 @@ class DiffuseStage : ShadingStage {
 }
 
 class SpecularStage : ShadingStage {
-    override fun shade(hit: Intersection, scene: Scene, bounce: Int, layersToCheck: Set<String>, camera: Camera): Vector3f {
+    override fun shade(hit: Intersection, context: RayTraceContext): Vector3f {
         // Simple Phong specular model (placeholder)
-        return scene.lights.fold (Vector3f(0f, 0f, 0f)) { acc, light ->
+        return context.scene.lights.fold (Vector3f(0f, 0f, 0f)) { acc, light ->
             val lightDir = light.getDirection(hit.point)
 
             if (light.contributesToShadows) {
                 val shadowRay = Ray(hit.point + hit.normal * EPSILON, lightDir)
-                val inShadow = scene.intersect(shadowRay, layersToCheck)?.let {
+                val inShadow = context.scene.intersect(shadowRay, context)?.let {
                     it.t < light.getDistance(hit.point)
                 } ?: false
                 if (inShadow){
@@ -99,7 +100,7 @@ class SpecularStage : ShadingStage {
                 }
             }
 
-            val viewDir = (camera.position - hit.point).normalize()
+            val viewDir = (context.camera.position - hit.point).normalize()
             val reflectDir = reflect(-lightDir, hit.normal)
             val spec = maxOf(viewDir.dot(reflectDir), 0f).pow(hit.material.shininess)
             acc + light.computeIntensity(hit, lightDir) * spec // white specular
