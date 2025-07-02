@@ -4,7 +4,6 @@ import org.joml.Vector3f
 import org.joml.minus
 import org.joml.plus
 import org.joml.times
-import org.kotlingl.math.*
 import org.kotlingl.shapes.Ray
 import org.lwjgl.opengl.GL11
 import java.nio.ByteBuffer
@@ -19,9 +18,7 @@ class Camera(
     var fieldOfView: Float = 90f
 ) {
     var textureId: Int? = null
-
-    init {
-    }
+    var initialized: Boolean = false
 
     fun initGL() {
         // create opengl texture
@@ -40,6 +37,8 @@ class Camera(
         )
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST)
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST)
+
+        initialized = true
     }
 
     var FoVRadians: Float
@@ -106,23 +105,16 @@ class Camera(
 }
 
 class CameraManager(private val cameras: MutableMap<String, Camera> = mutableMapOf()) {
-    var activeCameraId: String = "main"
-
-    fun initCameras() {
-        cameras.forEach {
-            it.value.initGL()
-        }
-    }
-
-    val activeCamera: Camera
-        get() = cameras[activeCameraId] ?: error("No active camera")
 
     fun addCamera(id: String, camera: Camera) {
         cameras[id] = camera
     }
 
-    fun switchTo(id: String) {
-        if (!cameras.containsKey(id)) error("No camera with id: $id")
-        activeCameraId = id
+    fun getCamera(name: String): Camera {
+        val camera = cameras.getValue(name)
+        if (!camera.initialized) {
+            camera.initGL()
+        }
+        return camera
     }
 }

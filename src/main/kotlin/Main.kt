@@ -7,6 +7,12 @@ import org.kotlingl.model.ModelLoader
 import org.kotlingl.FrameTimer
 import org.kotlingl.renderer.ModelRenderer
 import org.kotlingl.WindowManager
+import org.kotlingl.renderer.BackgroundRenderer
+import org.kotlingl.renderer.Compositor
+import org.kotlingl.renderer.RayTraceRenderer
+import org.kotlingl.renderer.RenderPipeline
+import org.kotlingl.renderer.UIRenderer
+import org.kotlingl.renderer.WorldRenderer
 import org.lwjgl.Version
 import org.lwjgl.glfw.GLFW
 import org.lwjgl.glfw.GLFWErrorCallback
@@ -71,74 +77,15 @@ fun main() {
             //    0.7f
             //)
         ),
-        sceneObjects = mutableListOf(
-            spider,
-            //box,
-            blockyChar,
-            blockyChar2
-            //Model.fromAssimp("/models/box/box.obj").apply {
-            //    transform(
-            //        Vector3f(0f, 1f, -3f),
-            //        //Quaternionf().rotateY(PI.toFloat()),
-            //        //scale= Vector3f(.2f, .2f, .2f)
-            //    )
-            //},
-            //Sphere(
-            //    Vector3f(-3f, 1f, -3f),
-            //    1f,
-            //    Material(
-            //        ColorRGB.RED
-            //    )
-            //),
-            //Sphere(
-            //    Vector3f(0f, 1f, -3f),
-            //    1f,
-            //    Material(
-            //        ColorRGB.GREEN,
-            //        texture= Texture.fromImageFile("/textures/numbered-checker.png"),
-            //        //shininess=0f
-            //    ),
-            //    up = Vector3f(0f, 1f, 0f),
-            //    right = Vector3f(1f, 0f, 0f)
-            //),
-            //Sphere(
-            //    Vector3f(3f, 1f, -3f),
-            //    1f,
-            //    Material(
-            //        ColorRGB.BLUE
-            //    )
-            //),
-            //Triangle(
-            //    Vertex(
-            //        Vector3f(-3f, 3f, -3f),
-            //        Vector3f(0f, 0f, 1f),
-            //        Vector2f(0f, 0f),
-            //    ),
-            //    Vertex(
-            //        Vector3f(3f, 3f, -3f),
-            //        Vector3f(0f, 0f, 1f),
-            //        Vector2f(1f, 0f),
-            //    ),
-            //    Vertex(
-            //        Vector3f(0f, 4f, -3f),
-            //        Vector3f(0f, 0f, 1f),
-            //        Vector2f(.5f, 1f),
-            //    ),
-            //    Material(
-            //        texture = Texture.fromImageFile("/textures/numbered-checker.png")
-            //    ),
-            //),
-            //Plane(
-            //    Vector3f(-.5f, 0f, -3f),
-            //    Vector3f(0f, 1f, 0f),
-            //    Material(
-            //        ColorRGB.GREY,
-            //        texture = Texture.fromImageResource("/textures/cement-1.png"),
-            //        uvScale = Vector2f(5f, 5f),
-            //        wrapMode = WrapMode.MIRROR,
-            //    ),
-            //    Vector3f(1f, 0f, 0f)
-            //)
+        layers = mutableMapOf(
+            "background" to Layer(
+                "background",
+                mutableListOf(
+                    spider,
+                    blockyChar,
+                    blockyChar2
+                )
+            )
         ),
     )
 
@@ -154,8 +101,15 @@ fun main() {
         println("Hello LWJGL " + Version.getVersion() + "!")
         InputManager.init(windowManager.window)
 
-        scene.initGL()
-        val mr = ModelRenderer(width, height)
+        //scene.initGL()
+        //val mr = ModelRenderer(width, height)
+        val renderPipeline = RenderPipeline(
+            BackgroundRenderer(),
+            RayTraceRenderer(),
+            WorldRenderer(),
+            UIRenderer(),
+            Compositor(windowManager.width, windowManager.height)
+        )
 
         val timer = FrameTimer()
         while (!windowManager.shouldClose()) {
@@ -165,7 +119,9 @@ fun main() {
 
             scene.update(dt)
 
-            mr.traceRays(scene)
+            //mr.traceRays(scene)
+            renderPipeline.render(scene, scene.cameraManager)
+
 
             windowManager.pollEvents()
             windowManager.swapBuffers()

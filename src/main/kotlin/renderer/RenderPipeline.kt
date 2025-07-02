@@ -5,16 +5,18 @@ import org.kotlingl.Scene
 
 class RenderPipeline(
     val background: BackgroundRenderer,
+    val backgroundRayTrace: RayTraceRenderer,
     val world: WorldRenderer,
-    val model: ModelRenderer,
     val ui: UIRenderer,
     val compositor: Compositor
 ) {
+    val renderOrder = listOf("background_far", "background_near", "world", "foreground", "ui")
+
     fun render(scene: Scene, cameras: CameraManager) {
-        background.render(scene, cameras.background, compositor.backgroundFB)
-        world.render(scene, cameras.world, compositor.worldFB)
-        model.render(scene, cameras.world, compositor.worldFB)
-        ui.render(scene, cameras.ui, compositor.uiFB)
+        background.render(scene, cameras.getCamera("background"), compositor.backgroundFB)
+        backgroundRayTrace.render(scene, cameras.getCamera("background"), compositor.backgroundFB)
+        world.render(scene, cameras.getCamera("world"), compositor.worldFB)
+        ui.render(scene, cameras.getCamera("ui"), compositor.uiFB)
 
         compositor.composeToScreen()
     }

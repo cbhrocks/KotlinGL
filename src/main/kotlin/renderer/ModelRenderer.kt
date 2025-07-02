@@ -8,15 +8,14 @@ import java.nio.ByteBuffer
 
 class ModelRenderer(var width: Int, var height: Int): Renderer {
 
-    fun traceRays(scene: Scene) {
-        val camera = scene.cameraManager.activeCamera
+    fun traceRays(scene: Scene, camera: Camera) {
         val rays = camera.generateRays()
 
         // create pixel buffer
         val pixels = ByteBuffer.allocateDirect(rays.size * 3)
         // put colors for each ray in pixel buffer
         rays.forEachIndexed { index, ray ->
-            val color = scene.traceRay(ray)
+            val color = scene.traceRay("background", ray)
 
             pixels.put(color.r.toByte())
             pixels.put(color.g.toByte())
