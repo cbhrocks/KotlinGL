@@ -7,17 +7,20 @@ import org.lwjgl.opengl.GL11.*
 import org.lwjgl.opengl.GL13.GL_TEXTURE0
 import org.lwjgl.opengl.GL13.glActiveTexture
 import org.lwjgl.opengl.GL30.*
-import kotlin.properties.Delegates
 
-class Compositor(val width: Int, val height: Int) {
+class Compositor(var renderWidth: Int, var renderHeight: Int, var viewportWidth: Int, var viewportHeight: Int) {
     private val screenQuad = ScreenQuad()
     private val quadShader: Shader
 
     val renderTargets = mutableMapOf(
-        "background" to Framebuffer.create(width, height),
-        "world" to Framebuffer.create(width, height),
-        "ui" to Framebuffer.create(width, height),
+        "background" to Framebuffer.create(renderWidth, renderHeight),
+        "world" to Framebuffer.create(renderWidth, renderHeight),
+        "ui" to Framebuffer.create(renderWidth, renderHeight),
     )
+
+    fun initGL() {
+        screenQuad.initGL()
+    }
 
     init {
         val vertexSource = Shader.loadShaderSource("/shaders/fullscreen_quad.vert")
@@ -29,7 +32,7 @@ class Compositor(val width: Int, val height: Int) {
         // Bind default framebuffer (screen)
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
-        glViewport(0, 0, width, height)
+        glViewport(0, 0, viewportWidth, viewportHeight)
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
         glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
 
@@ -53,6 +56,14 @@ class Compositor(val width: Int, val height: Int) {
             target.value.bind()
             GL11.glClearColor(0f, 0f, 0f, 1f)
             GL11.glClear(GL11.GL_COLOR_BUFFER_BIT or GL11.GL_DEPTH_BUFFER_BIT)
+        }
+    }
+
+    fun resize(width: Int, height: Int) {
+        this.renderWidth = width
+        this.renderHeight = height
+        renderTargets.mapValues {
+            it.key to it.value.resize(width, height)
         }
     }
 }

@@ -58,18 +58,12 @@ fun main() {
             mutableMapOf("world" to Camera(
                 Vector3f(0f, 1f, -4f),
                 lookAt = Vector3f(0f, 1f, 0f),
-                resX = width,
-                resY = height,
             ), "background" to Camera(
                 Vector3f(0f, 1f, -4f),
                 lookAt = Vector3f(0f, 1f, 0f),
-                resX = width,
-                resY = height,
             ), "ui" to Camera(
                 Vector3f(0f, 1f, -4f),
                 lookAt = Vector3f(0f, 1f, 0f),
-                resX = width,
-                resY = height,
             ))
         ),
         lights = mutableListOf(
@@ -108,13 +102,19 @@ fun main() {
         println("Hello LWJGL " + Version.getVersion() + "!")
         InputManager.init(windowManager.window)
 
-        //scene.initGL()
-        //val mr = ModelRenderer(width, height)
-
         val compositor = Compositor(
+            480,
+            240,
             windowManager.width,
             windowManager.height
         )
+        compositor.initGL()
+
+        windowManager.onResize { width, height ->
+            compositor.viewportWidth = width
+            compositor.viewportHeight = height
+        }
+
         val renderPipeline = RenderPipeline(
             BackgroundRenderer(),
             RayTraceRenderer(),
@@ -131,9 +131,10 @@ fun main() {
 
             scene.update(dt)
 
-            //mr.traceRays(scene)
-            renderPipeline.render(scene, scene.cameraManager)
-
+            renderPipeline.render(
+                scene,
+                scene.cameraManager,
+            )
 
             windowManager.pollEvents()
             windowManager.swapBuffers()

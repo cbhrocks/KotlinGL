@@ -25,7 +25,6 @@ data class Framebuffer (
     val width: Int,
     val height: Int,
     val depthBufferId: Int? = null // Optional for depth-only or depth+color FBOs
-
 ) {
     fun destroy() {
         glDeleteFramebuffers(id)
@@ -35,7 +34,7 @@ data class Framebuffer (
 
     fun resize(newWidth: Int, newHeight: Int): Framebuffer {
         destroy()
-        return Framebuffer.create(newWidth, newHeight)
+        return create(newWidth, newHeight)
     }
 
     fun bind() {
@@ -48,7 +47,12 @@ data class Framebuffer (
     }
 
     fun uploadBuffer(buffer: ByteBuffer) {
-        glBindTexture(GL_TEXTURE_2D, textureId)
+        val bufferLength = buffer.capacity()/4
+        val texturePixels = width * height
+        require( bufferLength == texturePixels) {
+            "buffer ($bufferLength) is not the same size as the texture target ($texturePixels)"
+        }
+        bindTexture()
         glTexSubImage2D(
             GL_TEXTURE_2D,
             0, 0, 0,

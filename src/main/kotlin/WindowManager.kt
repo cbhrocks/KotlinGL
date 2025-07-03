@@ -24,6 +24,7 @@ class WindowManager: AutoCloseable {
 
         // Create the window
         window = GLFW.glfwCreateWindow(width, height, "Hello World!", MemoryUtil.NULL, MemoryUtil.NULL)
+        GLFW.glfwSetWindowAspectRatio(window, width, height)
         if (window == MemoryUtil.NULL) throw RuntimeException("Failed to create the GLFW window")
 
         // Setup a key callback. It will be called every time a key is pressed, repeated or released.

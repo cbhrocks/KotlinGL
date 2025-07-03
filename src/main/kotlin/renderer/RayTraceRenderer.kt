@@ -15,20 +15,21 @@ import java.nio.ByteBuffer
 
 class RayTraceRenderer(): Renderer {
 
-    fun rayTraceScene(scene: Scene, camera: Camera): ByteBuffer {
-        val rays = camera.generateRays()
+    fun rayTraceScene(scene: Scene, camera: Camera, resX: Int, resY: Int): ByteBuffer {
+        val rays = camera.generateRays(resX, resY)
 
         // create pixel buffer
-        val pixels = ByteBuffer.allocateDirect(rays.size * 3)
+        val pixels = ByteBuffer.allocateDirect(rays.size * 4)
         // put colors for each ray in pixel buffer
         rays.forEachIndexed { index, ray ->
             val color = scene.traceRay(ray, RayTraceContext(
-                scene, camera, setOf("Background")
+                scene, camera, setOf("background")
             ))
 
             pixels.put(color.r.toByte())
             pixels.put(color.g.toByte())
             pixels.put(color.b.toByte())
+            pixels.put(color.a.toByte())
             //pixels.put((color.x * 255f).toInt().coerceIn(0, 255).toByte())
             //pixels.put((color.y * 255f).toInt().coerceIn(0, 255).toByte())
             //pixels.put((color.z * 255f).toInt().coerceIn(0, 255).toByte())
@@ -44,7 +45,7 @@ class RayTraceRenderer(): Renderer {
         camera: Camera,
         target: Framebuffer
     ) {
-        val buffer = rayTraceScene(scene, camera)
+        val buffer = rayTraceScene(scene, camera, target.width, target.height)
         target.uploadBuffer(buffer)
     }
 }

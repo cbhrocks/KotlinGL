@@ -6,22 +6,27 @@ import org.lwjgl.opengl.GL20.glVertexAttribPointer
 import org.lwjgl.opengl.GL30.*
 import org.lwjgl.system.MemoryUtil.memAllocFloat
 import org.lwjgl.system.MemoryUtil.memFree
+import kotlin.properties.Delegates
 
 class ScreenQuad {
-    val vaoId: Int
-    val vboId: Int
+    var vaoId by Delegates.notNull<Int>()
+    var vboId by Delegates.notNull<Int>()
 
-    init {
+    fun initGL() {
         vaoId = glGenVertexArrays()
         vboId = glGenBuffers()
 
         glBindVertexArray(vaoId)
 
         val vertices = floatArrayOf(
-            -1f, -1f, 0f, 0f,
-            1f, -1f, 1f, 0f,
-            -1f,  1f, 0f, 1f,
-            1f,  1f, 1f, 1f,
+            // triangle 1
+            -1f,  1f, 0f, 1f,  // top-left
+            -1f, -1f, 0f, 0f,  // bottom-left
+            1f, -1f, 1f, 0f,  // bottom-right
+            // triangle 2
+            -1f,  1f, 0f, 1f,  // top-left
+            1f, -1f, 1f, 0f,  // bottom-right
+            1f,  1f, 1f, 1f   // top-right
         )
 
         val buffer = memAllocFloat(vertices.size).put(vertices).flip()
@@ -42,7 +47,7 @@ class ScreenQuad {
 
     fun render() {
         glBindVertexArray(vaoId)
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
+        glDrawArrays(GL_TRIANGLES, 0, 6)
         glBindVertexArray(0)
     }
 

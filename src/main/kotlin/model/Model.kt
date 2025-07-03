@@ -71,35 +71,11 @@ class Model(
         bvhTree.refit()
     }
 
-    //fun update(parentMatrix: Matrix4fc? = null) {
-    //    // Compute world matrix
-    //    val worldMatrix = parentMatrix?.mul(modelM.getRef(), Matrix4f()) ?: modelM.getRef()
-    //    this.worldMatrix = worldMatrix
-
-    //    // Update own BVH with current transform
-    //    bvhTree.refit(worldMatrix)
-
-    //    // Recurse into children
-    //    for (child in children) {
-    //        child.update(worldMatrix)
-    //    }
-    //}
-
     override fun intersects(ray: Ray): Intersection? {
         val localRay = ray.transformedBy(modelMInverse)
         val localHit = this.bvhTree.intersects(localRay)
         return localHit?.transformedBy(modelMatrix)
     }
-
-    /* for when rasterization is implemented
-    fun Model.draw(shader: Shader) {
-        shader.setMatrix("model", transform)
-        for (mesh in meshes) {
-            mesh.draw(shader)
-        }
-        children.forEach { it.draw(shader) }
-    }
-    */
 }
 
 class SkeletonAnimator(val skeleton: Skeleton) {

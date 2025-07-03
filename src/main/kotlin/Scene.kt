@@ -37,6 +37,10 @@ data class Scene(
     var activeCameraIndex: Int = 0
 ) {
     fun intersect(ray: Ray, context: RayTraceContext): Intersection? {
+        require(layers.keys.containsAll(context.layersToCheck)) {
+            "Layer(s) not found for ray tracing: ${context.layersToCheck - layers.keys}"
+        }
+
         return layers.filterKeys{ it in context.layersToCheck }.values
             .flatMap{it.objects}
             .mapNotNull { (it as? Intersectable)?.intersects(ray) }
@@ -49,6 +53,7 @@ data class Scene(
             //return intersection.material.color
             return shader.shade(intersection, context)
         }
+        //return ColorRGB(50, 50, 50)
         return ColorRGB(50, 50, 50)
     }
 
