@@ -1,6 +1,6 @@
 package org.kotlingl.renderer
 
-import Shader
+import ShaderProgram
 import org.kotlingl.shapes.ScreenQuad
 import org.lwjgl.opengl.GL11
 import org.lwjgl.opengl.GL11.*
@@ -10,7 +10,7 @@ import org.lwjgl.opengl.GL30.*
 
 class Compositor(var renderWidth: Int, var renderHeight: Int, var viewportWidth: Int, var viewportHeight: Int) {
     private val screenQuad = ScreenQuad()
-    private val quadShader: Shader
+    private val quadShader: ShaderProgram
 
     val renderTargets = mutableMapOf(
         "background" to Framebuffer.create(renderWidth, renderHeight),
@@ -23,9 +23,9 @@ class Compositor(var renderWidth: Int, var renderHeight: Int, var viewportWidth:
     }
 
     init {
-        val vertexSource = Shader.loadShaderSource("/shaders/fullscreen_quad.vert")
-        val fragmentSource = Shader.loadShaderSource("/shaders/fullscreen_quad.frag")
-        quadShader = Shader(vertexSource, fragmentSource)
+        val vertexSource = ShaderProgram.loadShaderSource("/shaders/fullscreen_quad.vert")
+        val fragmentSource = ShaderProgram.loadShaderSource("/shaders/fullscreen_quad.frag")
+        quadShader = ShaderProgram(vertexSource, fragmentSource)
     }
 
     fun composeToScreen() {

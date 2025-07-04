@@ -14,7 +14,6 @@ class ModelRenderer(var width: Int, var height: Int): Renderer {
         camera: Camera,
         target: Framebuffer
     ) {
-
     }
 }
 

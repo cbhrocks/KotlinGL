@@ -1,5 +1,7 @@
 package org.kotlingl
 
+import ShaderProgram
+import org.joml.Matrix4f
 import org.joml.Vector3f
 import org.joml.minus
 import org.joml.plus
@@ -20,6 +22,14 @@ class Camera(
         set(direction){
             this.lookAt = this.position + direction
         }
+
+    fun bind(shader: ShaderProgram, aspectRatio: Float) {
+        val view = Matrix4f().lookAt(position, lookAt, up)
+        val projection = Matrix4f().perspective(Math.toRadians(fieldOfView.toDouble()).toFloat(), aspectRatio, 0.1f, 100f)
+
+        shader.setUniform("uView", view)
+        shader.setUniform("uProjection", projection)
+    }
 
     fun generateRays(resX: Int, resY: Int): List<Ray>{
         val right = this.direction.cross(up, Vector3f()).normalize()

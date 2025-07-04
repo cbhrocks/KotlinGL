@@ -1,10 +1,11 @@
 import org.lwjgl.opengl.GL20.*
 import org.joml.Matrix4f
+import org.joml.Vector2fc
 import org.joml.Vector3f
 import java.nio.FloatBuffer
 import org.lwjgl.system.MemoryStack
 
-class Shader(
+class ShaderProgram(
     vertexSource: String,
     fragmentSource: String
 ) {
@@ -37,6 +38,10 @@ class Shader(
 
     fun setUniform(name: String, value: Float) {
         glUniform1f(getUniformLocation(name), value)
+    }
+
+    fun setUniform(name: String, vector: Vector2fc) {
+        glUniform2f(getUniformLocation(name), vector.x(), vector.y())
     }
 
     fun setUniform(name: String, vector: Vector3f) {
@@ -77,7 +82,7 @@ class Shader(
 
     companion object {
         fun loadShaderSource(path: String): String {
-            val resource = Shader::class.java.getResourceAsStream(path)
+            val resource = ShaderProgram::class.java.getResourceAsStream(path)
                 ?: throw IllegalArgumentException("Shader file not found: $path")
             return resource.bufferedReader().use { it.readText() }
         }

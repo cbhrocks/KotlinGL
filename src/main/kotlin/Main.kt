@@ -1,5 +1,6 @@
 package org.kotlingl
 
+import ShaderProgram
 import org.joml.Quaternionf
 import org.joml.Vector3f
 import org.kotlingl.lighting.*
@@ -102,6 +103,8 @@ fun main() {
         println("Hello LWJGL " + Version.getVersion() + "!")
         InputManager.init(windowManager.window)
 
+        scene.initGL()
+
         val compositor = Compositor(
             480,
             240,
@@ -115,8 +118,13 @@ fun main() {
             compositor.viewportHeight = height
         }
 
+        val backgroundShader = ShaderProgram(
+            ShaderProgram.loadShaderSource("/shaders/basic.vert"),
+            ShaderProgram.loadShaderSource("/shaders/basic.frag"),
+        )
+
         val renderPipeline = RenderPipeline(
-            BackgroundRenderer(),
+            BackgroundRenderer(backgroundShader),
             RayTraceRenderer(),
             WorldRenderer(),
             UIRenderer(),

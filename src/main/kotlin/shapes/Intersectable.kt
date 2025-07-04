@@ -1,9 +1,25 @@
 package org.kotlingl.shapes
 
-import org.joml.Matrix4fc
+import ShaderProgram
 import org.joml.Vector3f
 import org.kotlingl.entity.Intersection
-import org.kotlingl.model.BVHNode
+
+abstract class GLResource {
+    var glInitialized: Boolean = false
+        private set
+
+    abstract fun initGL()
+    open fun cleanupGL() {}
+
+    protected fun markInitialized() {
+        glInitialized = true
+    }
+
+}
+
+interface Drawable {
+    fun draw(shader: ShaderProgram)
+}
 
 interface Intersectable {
     //val aabb: AABB

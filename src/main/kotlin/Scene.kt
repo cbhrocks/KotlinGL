@@ -1,9 +1,12 @@
 package org.kotlingl
 
+import ShaderProgram
 import org.kotlingl.entity.ColorRGB
 import org.kotlingl.entity.Intersection
 import org.kotlingl.lighting.Shader
 import org.kotlingl.lights.Light
+import org.kotlingl.shapes.Drawable
+import org.kotlingl.shapes.GLResource
 import org.kotlingl.shapes.Intersectable
 import org.kotlingl.shapes.Ray
 import org.kotlingl.shapes.Updatable
@@ -20,6 +23,11 @@ class Layer(
             .mapNotNull { it as? Updatable }
             .forEach { it.update(timeDelta) }
     }
+
+    fun initGL() {
+        objects.mapNotNull { it as? GLResource }
+            .forEach { it.initGL() }
+    }
 }
 
 data class RayTraceContext(
@@ -35,7 +43,8 @@ data class Scene(
     var lights: MutableList<Light> = mutableListOf<Light>(),
     var layers: MutableMap<String, Layer> = mutableMapOf(),
     var activeCameraIndex: Int = 0
-) {
+): GLResource() {
+
     fun intersect(ray: Ray, context: RayTraceContext): Intersection? {
         require(layers.keys.containsAll(context.layersToCheck)) {
             "Layer(s) not found for ray tracing: ${context.layersToCheck - layers.keys}"
@@ -59,5 +68,16 @@ data class Scene(
 
     fun update(timeDelta: Float) {
         layers.filter { it.value.shouldUpdate }.forEach { it.value.update(timeDelta) }
+    }
+
+    override fun initGL() {
+        layers.forEach { it.value.initGL() }
+        markInitialized()
+    }
+
+    fun draw(shader: ShaderProgram, layersToCheck: Set<String>) {
+        layers.filterKeys { it in layersToCheck }
+            .values.mapNotNull { it.objects as? Drawable }
+            .forEach { it.draw(shader) }
     }
 }

@@ -1,5 +1,6 @@
 package org.kotlingl.model
 
+import ShaderProgram
 import org.joml.Matrix4f
 import org.joml.Quaternionf
 import org.kotlingl.entity.Intersection
@@ -7,7 +8,8 @@ import org.kotlingl.shapes.Ray
 
 import org.joml.Vector3f
 import org.kotlingl.math.TrackedMatrix
-import org.kotlingl.shapes.Bounded
+import org.kotlingl.shapes.Drawable
+import org.kotlingl.shapes.GLResource
 import org.kotlingl.shapes.Intersectable
 import org.kotlingl.shapes.Updatable
 
@@ -22,11 +24,11 @@ import org.kotlingl.shapes.Updatable
  */
 class Model(
     val name: String,
-    val meshes: List<Bounded>,
+    val meshes: List<Mesh>,
     val skeleton: Skeleton,
     val nodeToMeshIndices: MutableMap<String, List<Int>> = mutableMapOf(),
     modelMatrix: Matrix4f = Matrix4f()
-): Intersectable, Updatable {
+): Intersectable, Updatable, GLResource(), Drawable {
     var modelMatrix: Matrix4f = modelMatrix
         private set
     var sharedMatrix = TrackedMatrix(modelMatrix)
@@ -43,6 +45,15 @@ class Model(
         BVHTree.buildForModel(this)
     }
     val skeletonAnimator: SkeletonAnimator = SkeletonAnimator(skeleton)
+
+    override fun initGL() {
+        meshes.forEach { it.initGL() }
+        markInitialized()
+    }
+
+    override fun draw(shader: ShaderProgram) {
+        meshes.forEach { it.draw(shader) }
+    }
 
     fun transform(
         modelMatrix: Matrix4f
@@ -87,7 +98,7 @@ class SkeletonAnimator(val skeleton: Skeleton) {
 
         // Advance time
         currentTime += deltaTime * animation.ticksPerSecond
-        val timeInTicks = currentTime % animation.duration
+        val timeInTicks = currentTime % (animation.duration)
 
         // Apply animation
         applyAnimationToSkeleton(skeleton, animation, timeInTicks)
