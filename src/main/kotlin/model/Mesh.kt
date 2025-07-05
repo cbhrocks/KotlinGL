@@ -11,6 +11,8 @@ import org.kotlingl.shapes.Drawable
 import org.kotlingl.shapes.GLResource
 import org.kotlingl.shapes.Ray
 import org.kotlingl.shapes.Triangle
+import org.kotlingl.utils.checkGLError
+import org.kotlingl.utils.isGLReady
 import org.lwjgl.opengl.GL11.GL_FLOAT
 import org.lwjgl.opengl.GL11.GL_TRIANGLES
 import org.lwjgl.opengl.GL11.GL_UNSIGNED_INT
@@ -67,6 +69,7 @@ class Mesh(
     }
 
     override fun initGL() {
+        require(isGLReady()) { "GL has not been initialized" }
         material.initGL()
 
         vaoId = glGenVertexArrays()
@@ -145,6 +148,7 @@ class Mesh(
         material.bind(shader)
         glBindVertexArray(vaoId)
         glDrawElements(GL_TRIANGLES, indices.size, GL_UNSIGNED_INT, 0)
+        checkGLError("glDrawElements")
         glBindVertexArray(0)
     }
 

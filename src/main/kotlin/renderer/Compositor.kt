@@ -54,9 +54,10 @@ class Compositor(var renderWidth: Int, var renderHeight: Int, var viewportWidth:
     fun clearBuffers() {
         for (target in renderTargets) {
             target.value.bind()
-            GL11.glClearColor(0f, 0f, 0f, 1f)
+            GL11.glClearColor(50f, 0f, 0f, 1f)
             GL11.glClear(GL11.GL_COLOR_BUFFER_BIT or GL11.GL_DEPTH_BUFFER_BIT)
         }
+        glBindFramebuffer(GL_FRAMEBUFFER, 0)
     }
 
     fun resize(width: Int, height: Int) {

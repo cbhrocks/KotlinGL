@@ -76,8 +76,14 @@ data class Scene(
     }
 
     fun draw(shader: ShaderProgram, layersToCheck: Set<String>) {
-        layers.filterKeys { it in layersToCheck }
-            .values.mapNotNull { it.objects as? Drawable }
-            .forEach { it.draw(shader) }
+        layers.filterKeys {
+            it in layersToCheck
+        } .values.flatMap{
+            it.objects
+        }.mapNotNull {
+            it as? Drawable
+        } .forEach {
+            it.draw(shader)
+        }
     }
 }

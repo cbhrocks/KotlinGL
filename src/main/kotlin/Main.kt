@@ -14,6 +14,7 @@ import org.kotlingl.renderer.RayTraceRenderer
 import org.kotlingl.renderer.RenderPipeline
 import org.kotlingl.renderer.UIRenderer
 import org.kotlingl.renderer.WorldRenderer
+import org.kotlingl.utils.isGLReady
 import org.lwjgl.Version
 import org.lwjgl.glfw.GLFW
 import org.lwjgl.glfw.GLFWErrorCallback

@@ -22,6 +22,12 @@ class WindowManager: AutoCloseable {
         GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE) // the window will stay hidden after creation
         GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_TRUE) // the window will be resizable
 
+        // needed for macos to work with certain gl functions. lose access to legacy functions.
+        GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3)
+        GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 2)
+        GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_PROFILE, GLFW.GLFW_OPENGL_CORE_PROFILE)
+        GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_FORWARD_COMPAT, GLFW.GLFW_TRUE)
+
         // Create the window
         window = GLFW.glfwCreateWindow(width, height, "Hello World!", MemoryUtil.NULL, MemoryUtil.NULL)
         GLFW.glfwSetWindowAspectRatio(window, width, height)
@@ -56,6 +62,7 @@ class WindowManager: AutoCloseable {
                 (vidMode.height() - pHeight.get(0)) / 2
             )
         }
+
         // Make the OpenGL context current
         GLFW.glfwMakeContextCurrent(window)
 

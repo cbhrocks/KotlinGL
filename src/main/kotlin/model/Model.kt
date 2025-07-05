@@ -12,6 +12,7 @@ import org.kotlingl.shapes.Drawable
 import org.kotlingl.shapes.GLResource
 import org.kotlingl.shapes.Intersectable
 import org.kotlingl.shapes.Updatable
+import org.kotlingl.utils.isGLReady
 
 /**
  * @property modelMatrix Model matrix transforms vertices from model space into parent's space. If there is no parent then into World space.
@@ -47,12 +48,31 @@ class Model(
     val skeletonAnimator: SkeletonAnimator = SkeletonAnimator(skeleton)
 
     override fun initGL() {
+        require(isGLReady()) { "GL has not been initialized" }
+
         meshes.forEach { it.initGL() }
         markInitialized()
     }
 
     override fun draw(shader: ShaderProgram) {
-        meshes.forEach { it.draw(shader) }
+        shader.use()
+
+        // Upload model transform and inverse
+        //shader.setUniform("uModel", modelMatrix)
+        //shader.setUniform("uModelInverse", modelMatrix.invert(Matrix4f()))
+
+        drawMeshByNode(skeleton.root, shader)
+    }
+
+    private fun drawMeshByNode(node: SkeletonNode, shader: ShaderProgram) {
+        // Upload final matrix for this set of meshes (uniform name depends on shader)
+        shader.setUniform("uModel", Matrix4f((node.finalTransform ?: node.globalTransform)).mul(sharedMatrix.getRef()))
+        nodeToMeshIndices.getValue(node.name).forEach {
+            meshes[it].draw(shader)
+        }
+        node.children.forEach {
+            drawMeshByNode(it, shader)
+        }
     }
 
     fun transform(
@@ -85,7 +105,7 @@ class Model(
     override fun intersects(ray: Ray): Intersection? {
         val localRay = ray.transformedBy(modelMInverse)
         val localHit = this.bvhTree.intersects(localRay)
-        return localHit?.transformedBy(modelMatrix)
+        return localHit?.transformedBy(sharedMatrix.getRef())
     }
 }
 
