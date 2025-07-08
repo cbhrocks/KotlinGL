@@ -61,10 +61,12 @@ class BVHTree(val root: BVHNode) {
 
     companion object {
         fun buildForModel(model: Model): BVHTree {
-            return BVHTree(buildBVHForModel(model, model.skeleton.root))
+            return BVHTree(buildBVHForModel(model, model.skeleton.rootName))
         }
 
-        private fun buildBVHForModel(model: Model, skeletonNode: SkeletonNode): BVHNode {
+        private fun buildBVHForModel(model: Model, currentNode: String): BVHNode {
+            val skeletonNode = model.skeleton.nodeMap.getValue(currentNode)
+
             val childNodes = mutableListOf<BVHNode>()
 
             // Create leaf nodes for each mesh
@@ -76,7 +78,7 @@ class BVHTree(val root: BVHNode) {
             }
 
             // Recursively build child BVH groups
-            for (node in skeletonNode.children) {
+            for (node in skeletonNode.childNames) {
                 childNodes.add(buildBVHForModel(model, node))
             }
 
@@ -85,7 +87,11 @@ class BVHTree(val root: BVHNode) {
             val aabb = childNodes.map {
                 it.getLocalAABB()
             }.reduce(::surroundingBox)
-            return BVHGroup(aabb, childNodes, skeletonNode.localTransform)
+            return BVHGroup(
+                aabb,
+                childNodes,
+                model.skeletonAnimator.nodeTransforms.getValue(currentNode).localTransform
+            )
         }
     }
 }

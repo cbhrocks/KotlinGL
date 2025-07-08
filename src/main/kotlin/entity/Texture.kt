@@ -80,7 +80,7 @@ class Texture(
         // Clamp or wrap UVs between 0 and 1
 
         val x = (wrappedUV.x() * width).toInt().coerceIn(0, width - 1)
-        val y = ((1-wrappedUV.y()) * height).toInt().coerceIn(0, height - 1)
+        val y = (wrappedUV.y() * height).toInt().coerceIn(0, height - 1)
         val index = (y * width + x) * 4
 
         val r = (imageData.get(index).toInt() and 0xFF)

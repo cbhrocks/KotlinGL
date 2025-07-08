@@ -27,7 +27,7 @@ class Model(
     val name: String,
     val meshes: List<Mesh>,
     val skeleton: Skeleton,
-    val nodeToMeshIndices: MutableMap<String, List<Int>> = mutableMapOf(),
+    val nodeToMeshIndices: MutableMap<String, List<Int>>,
     modelMatrix: Matrix4f = Matrix4f()
 ): Intersectable, Updatable, GLResource(), Drawable {
     var modelMatrix: Matrix4f = modelMatrix
@@ -45,7 +45,7 @@ class Model(
     val bvhTree: BVHTree by lazy {
         BVHTree.buildForModel(this)
     }
-    val skeletonAnimator: SkeletonAnimator = SkeletonAnimator(skeleton)
+    val skeletonAnimator: SkeletonAnimator = SkeletonAnimator(skeleton, sharedMatrix)
 
     override fun initGL() {
         require(isGLReady()) { "GL has not been initialized" }
@@ -61,16 +61,20 @@ class Model(
         //shader.setUniform("uModel", modelMatrix)
         //shader.setUniform("uModelInverse", modelMatrix.invert(Matrix4f()))
 
-        drawMeshByNode(skeleton.root, shader)
+        drawMeshByNode(skeleton.rootName, shader)
     }
 
-    private fun drawMeshByNode(node: SkeletonNode, shader: ShaderProgram) {
+    private fun drawMeshByNode(nodeName: String, shader: ShaderProgram) {
+        val nodeTransforms = skeletonAnimator.nodeTransforms.getValue(nodeName)
         // Upload final matrix for this set of meshes (uniform name depends on shader)
-        shader.setUniform("uModel", Matrix4f((node.finalTransform ?: node.globalTransform)).mul(sharedMatrix.getRef()))
-        nodeToMeshIndices.getValue(node.name).forEach {
+        shader.setUniform(
+            "uModel",
+            nodeTransforms.finalTransform ?: nodeTransforms.globalTransform
+        )
+        nodeToMeshIndices.getValue(nodeName).forEach {
             meshes[it].draw(shader)
         }
-        node.children.forEach {
+        skeleton.nodeMap.getValue(nodeName).childNames.forEach {
             drawMeshByNode(it, shader)
         }
     }
@@ -109,36 +113,45 @@ class Model(
     }
 }
 
-class SkeletonAnimator(val skeleton: Skeleton) {
+class SkeletonAnimator(val skeleton: Skeleton, val modelMatrix: TrackedMatrix) {
     var currentAnimation: Animation? = null
     var currentTime: Float = 0f
+    var nodeTransforms: MutableMap<String, SkeletonNodeTransforms> = mutableMapOf()
+
+    init {
+        nodeTransforms = skeleton.nodeMap.mapValues {
+            SkeletonNodeTransforms(
+                it.key,
+                TrackedMatrix(Matrix4f(it.value.localTransform))
+            )
+        }.toMutableMap()
+        updateGlobalTransforms(skeleton.rootName, modelMatrix.getRef())
+    }
 
     fun update(deltaTime: Float) {
-        val animation = currentAnimation ?: return
+        currentAnimation?.let {
+            // Advance time
+            currentTime += deltaTime * it.ticksPerSecond
+            val timeInTicks = currentTime % (it.duration)
 
-        // Advance time
-        currentTime += deltaTime * animation.ticksPerSecond
-        val timeInTicks = currentTime % (animation.duration)
+            // Apply animation
+            applyAnimationToSkeleton(skeleton, it, timeInTicks)
+        }
 
-        // Apply animation
-        applyAnimationToSkeleton(skeleton, animation, timeInTicks)
+        // After setting local transforms, propagate global transforms
+        updateGlobalTransforms(skeleton.rootName, modelMatrix.getRef())
     }
 
     fun applyAnimationToSkeleton(skeleton: Skeleton, animation: Animation, time: Float) {
         for ((boneName, nodeAnim) in animation.nodeAnimations) {
-            val boneNode = skeleton.nodeMap[boneName] ?: continue
-
             val position = interpolateKeyframes(time, nodeAnim.positionKeys)
             val rotation = interpolateKeyframes(time, nodeAnim.rotationKeys)
             val scale = interpolateKeyframes(time, nodeAnim.scaleKeys)
 
-            boneNode.localTransform.mutate {
+            nodeTransforms.getValue(boneName).localTransform.mutate {
                 translationRotateScale(position, rotation, scale)
             }
         }
-
-        // After setting local transforms, propagate global transforms
-        updateGlobalTransforms(skeleton.root, Matrix4f())
     }
 
     fun <T> interpolateKeyframes(time: Float, keys: List<Keyframe<T>>): T {
@@ -160,11 +173,20 @@ class SkeletonAnimator(val skeleton: Skeleton) {
         } as T
     }
 
-    fun updateGlobalTransforms(node: SkeletonNode, parentTransform: Matrix4f = Matrix4f()) {
-        node.globalTransform = Matrix4f(parentTransform).mul(node.localTransform.getRef())
-        if (node.isBone) {
-            node.finalTransform = Matrix4f(node.globalTransform).mul(skeleton.inverseBindPoseMap.getValue(node.name))
+    fun updateGlobalTransforms(nodeName: String, parentGlobal: Matrix4f = Matrix4f()) {
+        val currentNode = skeleton.nodeMap.getValue(nodeName)
+        val currentTransforms = nodeTransforms.getValue(nodeName)
+
+        parentGlobal.mul(currentTransforms.localTransform.getRef(), currentTransforms.globalTransform)
+        if (currentNode.isBone) {
+            parentGlobal.mul(
+                skeleton.inverseBindPoseMap.getValue(nodeName),
+                currentTransforms.finalTransform
+            )
         }
-        node.children.forEach { updateGlobalTransforms(it, node.globalTransform) }
+
+        currentNode.childNames.forEach {
+            updateGlobalTransforms(it, currentTransforms.globalTransform)
+        }
     }
 }

@@ -15,8 +15,8 @@ class RenderPipeline(
     fun render(scene: Scene, cameras: CameraManager) {
         compositor.clearBuffers()
 
-        //background.render(scene, cameras.getCamera("background"), compositor.getTarget("background"))
-        backgroundRayTrace.render(scene, cameras.getCamera("background"), compositor.getTarget("background"))
+        background.render(scene, cameras.getCamera("background"), compositor.getTarget("background"))
+        // backgroundRayTrace.render(scene, cameras.getCamera("background"), compositor.getTarget("background"))
         world.render(scene, cameras.getCamera("world"), compositor.getTarget("world"))
         ui.render(scene, cameras.getCamera("ui"), compositor.getTarget("ui"))
 

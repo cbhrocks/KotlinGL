@@ -8,7 +8,6 @@ import org.kotlingl.entity.Material
 import org.kotlingl.entity.Texture
 import org.kotlingl.entity.WrapMode
 import org.kotlingl.entity.toColor
-import org.kotlingl.math.TrackedMatrix
 import org.kotlingl.math.toJoml
 import org.lwjgl.BufferUtils
 import org.lwjgl.assimp.*
@@ -65,7 +64,7 @@ class ModelLoader {
         return Model(
             modelData.name,
             modelData.meshes,
-            skeletonCache.getValue(modelData.skeletonHash).deepCopy(),
+            skeletonCache.getValue(modelData.skeletonHash),
             modelData.nodeToMeshIndices,
             Matrix4f(modelData.modelTransform)
         )
@@ -91,7 +90,7 @@ class ModelLoader {
                     //aiProcess_LimitBoneWeights or
                     aiProcess_ImproveCacheLocality or
                     aiProcess_RemoveRedundantMaterials or
-                    //aiProcess_FlipUVs or
+                    aiProcess_FlipUVs or
                     aiProcess_CalcTangentSpace or
                     aiProcess_GlobalScale or
                     aiProcess_ValidateDataStructure or
@@ -147,7 +146,7 @@ class ModelLoader {
 
         val skeleton = Skeleton(
             scene.mRootNode()?.mName()?.dataString() ?: "UnnamedSkeleton",
-            nodeData.skeletonNode,
+            nodeData.skeletonNode.name,
             nodeData.nodeMap,
             animations,
             inverseBindPoseMap
@@ -353,37 +352,28 @@ class ModelLoader {
         return Mesh(vertices, indices, material, meshBones)
     }
 
-    fun buildBoneNodeMap(
-        skeletonNode: SkeletonNode,
-        boneNames: Set<String>,
-        boneMap: MutableMap<String, SkeletonNode> = mutableMapOf()
-    ): MutableMap<String, SkeletonNode> {
-        if (skeletonNode.name in boneNames) {
-            boneMap[skeletonNode.name] = skeletonNode
-        }
-        skeletonNode.children.forEach { buildBoneNodeMap(it, boneNames, boneMap) }
-        return boneMap
-    }
-
     fun walkNodes(
         boneNames: Set<String>,
         node: AINode,
-        parentGlobalTransform: Matrix4f = Matrix4f(),
-        nodeMap: MutableMap<String, SkeletonNode> = mutableMapOf()
+        parentName: String? = null,
     ): NodeTraversalData {
         val name = node.mName().dataString()
         // where each bone/model is relative to it's parent
         val localTransform = node.mTransformation().toJoml()
-        // where each bone is in world space
-        val globalTransform = parentGlobalTransform.mul(localTransform, Matrix4f())
 
         val childNodeData = List(node.mNumChildren()) { i ->
             val childNode = AINode.create(node.mChildren()!![i])
-            walkNodes(boneNames, childNode, globalTransform)
+            walkNodes(
+                boneNames,
+                childNode,
+                name,
+            )
         }
+
         val nodeToMeshIndices = mutableMapOf(name to List(node.mNumMeshes()) { i ->
             node.mMeshes()!!.get(i)
         })
+        val nodeMap: MutableMap<String, SkeletonNode> = mutableMapOf()
         childNodeData.forEach {
             nodeToMeshIndices.putAll(it.nodeToMeshIndices)
             nodeMap.putAll(it.nodeMap)
@@ -391,15 +381,13 @@ class ModelLoader {
 
         val skeletonNode = SkeletonNode(
             name,
-            TrackedMatrix(localTransform),
-            globalTransform,
-            isBone = boneNames.contains(name),
-            children = childNodeData.map{it.skeletonNode}
+            localTransform,
+            childNodeData.map{it.skeletonNode.name},
+            boneNames.contains(name),
+            parentName
         )
-        for (child in skeletonNode.children) {
-            child.parent = skeletonNode
-        }
         nodeMap.put(name, skeletonNode)
+
         return NodeTraversalData(
             skeletonNode,
             nodeMap,

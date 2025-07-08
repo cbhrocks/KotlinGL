@@ -25,7 +25,7 @@ class Camera(
 
     fun bind(shader: ShaderProgram, aspectRatio: Float) {
         val view = Matrix4f().lookAt(position, lookAt, up)
-        val projection = Matrix4f().perspective(
+        val projection = Matrix4f().setPerspective(
             Math.toRadians(fieldOfView.toDouble()).toFloat(),
             aspectRatio,
             0.1f,

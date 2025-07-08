@@ -42,8 +42,23 @@ data class Framebuffer (
         glViewport(0, 0, width, height)
     }
 
+    fun withBind(block: () -> Unit) {
+        bind()
+        try {
+            block()
+        }
+        finally {
+            glBindFramebuffer(GL_FRAMEBUFFER, 0)
+        }
+    }
+
     fun bindTexture() {
         glBindTexture(GL_TEXTURE_2D, textureId)
+    }
+
+    fun clearAttachments() {
+        glBindFramebuffer(GL_FRAMEBUFFER, id)
+        glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
     }
 
     fun uploadBuffer(buffer: ByteBuffer) {
