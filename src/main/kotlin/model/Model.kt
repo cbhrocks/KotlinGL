@@ -27,7 +27,7 @@ class Model(
     val name: String,
     val meshes: List<Mesh>,
     val skeleton: Skeleton,
-    val nodeToMeshIndices: MutableMap<String, List<Int>>,
+    val nodeToMeshIndices: MutableMap<Int, List<Int>>,
     modelMatrix: Matrix4f = Matrix4f()
 ): Intersectable, Updatable, GLResource(), Drawable {
     var modelMatrix: Matrix4f = modelMatrix

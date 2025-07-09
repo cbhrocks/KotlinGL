@@ -29,15 +29,15 @@ import kotlin.io.path.toPath
 
 data class ModelCacheData (
     val name: String,
-    val nodeToMeshIndices: MutableMap<String, List<Int>>,
+    val nodeToMeshIndices: MutableMap<Int, List<Int>>,
     val meshes: List<Mesh>,
     val modelTransform: Matrix4f,
     var skeletonHash: Int
 )
 
 data class NodeTraversalData (
-    val nodeMap: MutableMap<String, SkeletonNode>,
-    val nodeToMeshIndices: MutableMap<String, List<Int>>,
+    val nodeMap: MutableMap<Int, SkeletonNode>,
+    val nodeToMeshIndices: MutableMap<Int, List<Int>>,
 )
 
 class ModelLoader {
@@ -145,10 +145,10 @@ class ModelLoader {
 
         val skeleton = Skeleton(
             scene.mRootNode()?.mName()?.dataString() ?: "UnnamedSkeleton",
-            rootNode.mName().dataString(),
+            0, // root node should always be ID 0.
             nodeData.nodeMap,
+            inverseBindPoseMap,
             animations,
-            inverseBindPoseMap
         )
 
         val skeletonHash = skeleton.hashCode()
@@ -354,7 +354,7 @@ class ModelLoader {
     fun walkNodes(
         boneNames: Set<String>,
         node: AINode,
-        parentName: String? = null,
+        parentId: Int = 0,
     ): NodeTraversalData {
         val name = node.mName().dataString()
         // where each bone/model is relative to it's parent
@@ -367,7 +367,7 @@ class ModelLoader {
             walkNodes(
                 boneNames,
                 childNode,
-                name,
+                parentId + i + 1
             )
         }
 

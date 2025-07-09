@@ -30,6 +30,7 @@ data class Bone (
  * @property isBone whether this node is used as a bone by a mesh.
  */
 data class SkeletonNode(
+    val id: Int,
     val name: String,
     val localTransform: Matrix4f,
     val childNames: List<String> = listOf(),
@@ -43,6 +44,7 @@ data class SkeletonNode(
  * @property name used to link the BoneNode object various bones that use the animation transforms.
  */
 data class SkeletonNodeTransforms(
+    val id: Int,
     val name: String,
     var localTransform: TrackedMatrix, // Local transform (T * R * S)
     var globalTransform: Matrix4f = Matrix4f(), // Computed during animation
@@ -51,8 +53,8 @@ data class SkeletonNodeTransforms(
 
 data class Skeleton(
     val name: String,
-    val rootName: String,
-    val nodeMap: Map<String, SkeletonNode>,
+    val rootId: Int,
+    val nodeMap: Map<Int, SkeletonNode>,
+    val inverseBindPoseMap: Map<Int, Matrix4f> = mapOf(),
     val animations: Map<String, Animation> = mapOf(),
-    val inverseBindPoseMap: Map<String, Matrix4f> = mapOf()
 )
