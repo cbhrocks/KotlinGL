@@ -36,7 +36,6 @@ data class ModelCacheData (
 )
 
 data class NodeTraversalData (
-    val skeletonNode: SkeletonNode,
     val nodeMap: MutableMap<String, SkeletonNode>,
     val nodeToMeshIndices: MutableMap<String, List<Int>>,
 )
@@ -146,7 +145,7 @@ class ModelLoader {
 
         val skeleton = Skeleton(
             scene.mRootNode()?.mName()?.dataString() ?: "UnnamedSkeleton",
-            nodeData.skeletonNode.name,
+            rootNode.mName().dataString(),
             nodeData.nodeMap,
             animations,
             inverseBindPoseMap
@@ -156,7 +155,7 @@ class ModelLoader {
         skeletonCache[skeletonHash] = skeleton
 
         val modelCacheData = ModelCacheData(
-            nodeData.skeletonNode.name,
+            rootNode.mName().dataString(),
             nodeData.nodeToMeshIndices,
             meshes,
             Matrix4f(),
@@ -361,8 +360,10 @@ class ModelLoader {
         // where each bone/model is relative to it's parent
         val localTransform = node.mTransformation().toJoml()
 
+        val childNodeNames: MutableSet<String> = mutableSetOf()
         val childNodeData = List(node.mNumChildren()) { i ->
             val childNode = AINode.create(node.mChildren()!![i])
+            childNodeNames.add(childNode.mName().dataString())
             walkNodes(
                 boneNames,
                 childNode,
@@ -382,14 +383,15 @@ class ModelLoader {
         val skeletonNode = SkeletonNode(
             name,
             localTransform,
-            childNodeData.map{it.skeletonNode.name},
+            childNodeNames.toList(),
             boneNames.contains(name),
             parentName
         )
-        nodeMap.put(name, skeletonNode)
+        if (nodeMap.put(name, skeletonNode) != null) {
+            error("Cycle detected in node hierarchy at $name")
+        }
 
         return NodeTraversalData(
-            skeletonNode,
             nodeMap,
             nodeToMeshIndices,
         )
@@ -412,7 +414,7 @@ class ModelLoader {
             val rotationKeys = List(nodeAnim.mNumRotationKeys()) {
                 val quat = nodeAnim.mRotationKeys()!![it].mValue()
                 val time = nodeAnim.mRotationKeys()!![it].mTime().toFloat()
-                Keyframe(time, Quaternionf(quat.x(), quat.y(), quat.z(), quat.w()))
+                Keyframe(time, Quaternionf(quat.x(), quat.y(), quat.z(), quat.w()).normalize())
             }
 
             val scaleKeys = List(nodeAnim.mNumScalingKeys()) {

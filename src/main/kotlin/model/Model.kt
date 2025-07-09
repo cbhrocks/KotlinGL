@@ -144,9 +144,9 @@ class SkeletonAnimator(val skeleton: Skeleton, val modelMatrix: TrackedMatrix) {
 
     fun applyAnimationToSkeleton(skeleton: Skeleton, animation: Animation, time: Float) {
         for ((boneName, nodeAnim) in animation.nodeAnimations) {
-            val position = interpolateKeyframes(time, nodeAnim.positionKeys)
-            val rotation = interpolateKeyframes(time, nodeAnim.rotationKeys)
-            val scale = interpolateKeyframes(time, nodeAnim.scaleKeys)
+            val position = interpolateKeyframes(time, animation.duration, nodeAnim.positionKeys, animation.isLoop)
+            val rotation = interpolateKeyframes(time, animation.duration, nodeAnim.rotationKeys, animation.isLoop)
+            val scale = interpolateKeyframes(time, animation.duration, nodeAnim.scaleKeys, animation.isLoop)
 
             nodeTransforms.getValue(boneName).localTransform.mutate {
                 translationRotateScale(position, rotation, scale)
@@ -154,21 +154,34 @@ class SkeletonAnimator(val skeleton: Skeleton, val modelMatrix: TrackedMatrix) {
         }
     }
 
-    fun <T> interpolateKeyframes(time: Float, keys: List<Keyframe<T>>): T {
+    fun <T> interpolateKeyframes(time: Float, duration: Float, keys: List<Keyframe<T>>, isLoop: Boolean): T {
         if (keys.isEmpty()) throw IllegalArgumentException("No keyframes")
         if (keys.size == 1) return keys[0].value
+
+        val t = if (isLoop) time % duration else time.coerceIn(0f, duration)
 
         // Find two surrounding keyframes
         var i = 0
         while (i < keys.size - 1 && time > keys[i + 1].time) i++
 
+        // val key0 = keys[i]
+        // val key1 = keys[i + 1]
+        // val t = ((time - key0.time) / (key1.time - key0.time)).coerceIn(0f, 1f)
         val key0 = keys[i]
-        val key1 = keys[i + 1]
-        val t = ((time - key0.time) / (key1.time - key0.time)).coerceIn(0f, 1f)
+        val key1 = if (i + 1 < keys.size) {
+            keys[i + 1]
+        } else if (isLoop) {
+            // Loop back to the first keyframe
+            keys[0].copy(time = duration + keys[0].time)
+        } else {
+            // Clamp to last keyframe in non-looping case
+            return keys.last().value
+        }
+        val localT = ((t - key0.time) / (key1.time - key0.time)).coerceIn(0f, 1f)
 
         return when (val v0 = key0.value) {
-            is Vector3f -> Vector3f(v0).lerp(key1.value as Vector3f, t)
-            is Quaternionf -> Quaternionf(v0).slerp(key1.value as Quaternionf, t)
+            is Vector3f -> Vector3f(v0).lerp(key1.value as Vector3f, localT)
+            is Quaternionf -> Quaternionf(v0).slerp(key1.value as Quaternionf, localT)
             else -> error("Unsupported keyframe type")
         } as T
     }
@@ -181,7 +194,7 @@ class SkeletonAnimator(val skeleton: Skeleton, val modelMatrix: TrackedMatrix) {
         if (currentNode.isBone) {
             parentGlobal.mul(
                 skeleton.inverseBindPoseMap.getValue(nodeName),
-                currentTransforms.finalTransform
+                currentTransforms.finalTransform ?: Matrix4f()
             )
         }
 

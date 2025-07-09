@@ -23,15 +23,11 @@ import org.lwjgl.opengl.GL
 import kotlin.math.PI
 
 fun main() {
-    val width = 480
-    //val width = 1920
-    val height = 240
-    //val height = 1080
     val ml = ModelLoader()
-    ml.loadModel("/models/spider/spider.obj", "spider")
+    //ml.loadModel("/models/spider/spider.obj", "spider")
     //ml.loadModel("/models/box/box.obj", "box")
-    ml.loadModel("/models/blocky-characters/FBX format/character-a.fbx", "blocky-character-a")
-    ml.loadModel("/models/blocky-characters/OBJ format/character-a.obj", "blocky-character-a-obj")
+    // ml.loadModel("/models/blocky-characters/FBX format/character-a.fbx", "blocky-character-a")
+    ml.loadModel("/models/dragon/Dragon 2.5_fbx.fbx", "dragon")
     // val spider = ml.createModel("spider")
     // spider.transform(
     //     Vector3f(2f, 0f, 0f),
@@ -44,11 +40,12 @@ fun main() {
         rotation = Quaternionf().rotateY(PI.toFloat())//.rotateX(PI.toFloat()/2f),
     )
     blockyChar.skeletonAnimator.currentAnimation = blockyChar.skeleton.animations["walk"]
-    val blockyChar2 = ml.createModel("blocky-character-a")
-    blockyChar2.transform(
-        Vector3f(2f, 0f, 0f),
-        rotation = Quaternionf().rotateY(PI.toFloat())//.rotateX(PI.toFloat()/2f),
-    )
+    val dragon = ml.createModel("dragon")
+    //val blockyChar2 = ml.createModel("blocky-character-a")
+    //blockyChar2.transform(
+    //    Vector3f(2f, 0f, 0f),
+    //    rotation = Quaternionf().rotateY(PI.toFloat())//.rotateX(PI.toFloat()/2f),
+    //)
     val sphere = PrimitiveFactory.createSphere(
         "sphere"
     )
@@ -89,7 +86,8 @@ fun main() {
                 mutableListOf(
                     // spider,
                     blockyChar,
-                    blockyChar2,
+                    dragon,
+                    //blockyChar2,
                     // sphere
                 )
             )
