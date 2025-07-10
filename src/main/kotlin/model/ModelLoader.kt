@@ -8,6 +8,7 @@ import org.kotlingl.entity.Material
 import org.kotlingl.entity.Texture
 import org.kotlingl.entity.WrapMode
 import org.kotlingl.entity.toColor
+import org.kotlingl.math.EPSILON
 import org.kotlingl.math.toJoml
 import org.lwjgl.BufferUtils
 import org.lwjgl.assimp.*
@@ -431,17 +432,26 @@ class ModelLoader {
             val assimpKeys = nodeAnim.mRotationKeys()
             val rotationKeys = mutableListOf<Keyframe<Quaternionf>>()
             var lastQuat: Quaternionf? = null
+            // val identity = Quaternionf().identity()
 
             for (it in 0 until nodeAnim.mNumRotationKeys()) {
                 val key = assimpKeys!![it].mValue()
                 val time = assimpKeys[it].mTime().toFloat()
                 val q = Quaternionf(key.x(), key.y(), key.z(), key.w())
 
+                // flip hemisphere if needed
                 val corrected = if (lastQuat != null && lastQuat.dot(q) < 0f) {
-                    Quaternionf(-q.x, -q.y, -q.z, -q.w) // flip hemisphere
-                } else { q }.normalize()
-                rotationKeys.add(Keyframe(time, corrected))
-                lastQuat = corrected
+                    Quaternionf(-q.x, -q.y, -q.z, -q.w).normalize()
+                } else { q.normalize() }
+
+                // Check if this is an unwanted identity keyframe
+                val isIdentity = corrected.angle() < 0.01f
+                val isFirstOrLast = (it == 0 || it == nodeAnim.mNumRotationKeys() - 1)
+
+                if (!isIdentity || isFirstOrLast) {
+                    rotationKeys.add(Keyframe(time, corrected))
+                    lastQuat = corrected
+                }
             }
 
             for (i in 1 until rotationKeys.size) {
@@ -453,10 +463,11 @@ class ModelLoader {
                 }
             }
 
-            if (animation.mName().dataString() == "walk") {
+            if (animation.mName().dataString() == "walk" && nodeName == "root") {
                 for ((i, key) in rotationKeys.withIndex()) {
                     println("[$i] t=${key.time} rot=${key.value}")
                 }
+                println()
             }
 
             // val rotationKeys = List(nodeAnim.mNumRotationKeys()) {

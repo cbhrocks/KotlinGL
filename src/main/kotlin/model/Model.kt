@@ -181,8 +181,8 @@ class SkeletonAnimator(val skeleton: Skeleton, val modelMatrix: TrackedMatrix) {
 
         return when (val v0 = key0.value) {
             is Vector3f -> Vector3f(v0).lerp(key1.value as Vector3f, localT)
-            is Quaternionf -> Quaternionf(v0)
-            // is Quaternionf -> Quaternionf(v0).slerp(key1.value as Quaternionf, localT)
+            // is Quaternionf -> Quaternionf(v0)
+            is Quaternionf -> Quaternionf(v0).slerp(key1.value as Quaternionf, localT)
             else -> error("Unsupported keyframe type")
         } as T
     }
