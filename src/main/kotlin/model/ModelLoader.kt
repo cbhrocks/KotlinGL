@@ -37,6 +37,7 @@ data class ModelCacheData (
 
 data class NodeTraversalData (
     val nodeMap: MutableMap<Int, SkeletonNode>,
+    val nameToNodeId: MutableMap<String, MutableList<Int>>,
     val nodeToMeshIndices: MutableMap<Int, List<Int>>,
 )
 
@@ -132,16 +133,17 @@ class ModelLoader {
             }
         }.flatten().toSet()
 
-        val animCount = scene.mNumAnimations()
-        val aiAnimations = List(animCount) { i -> AIAnimation.create(scene.mAnimations()!![i]) }
-        val animations = aiAnimations.map {importAnimation(it)}.associateBy{it.name}
-
         val nodeData = walkNodes(boneNames, rootNode)
+
         val inverseBindPoseMap = meshes.map { mesh ->
             mesh.bones.associate {
-                it.name to it.offsetMatrix
+                nodeData.nameToNodeId.getValue(it.name).first() to it.offsetMatrix
             }
         }.reduce { acc, map -> acc + map }
+
+        val animCount = scene.mNumAnimations()
+        val aiAnimations = List(animCount) { i -> AIAnimation.create(scene.mAnimations()!![i]) }
+        val animations = aiAnimations.map { importAnimation(it, nodeData.nameToNodeId ) }.associateBy{it.name}
 
         val skeleton = Skeleton(
             scene.mRootNode()?.mName()?.dataString() ?: "UnnamedSkeleton",
@@ -353,57 +355,72 @@ class ModelLoader {
 
     fun walkNodes(
         boneNames: Set<String>,
-        node: AINode,
-        parentId: Int = 0,
+        rootNode: AINode,
     ): NodeTraversalData {
-        val name = node.mName().dataString()
-        // where each bone/model is relative to it's parent
-        val localTransform = node.mTransformation().toJoml()
+        // global data
+        val nodeMap: MutableMap<Int, SkeletonNode> = mutableMapOf()
+        val nodeToMeshIndices: MutableMap<Int, List<Int>> = mutableMapOf()
+        val nameToNodeId: MutableMap<String, MutableList<Int>> = mutableMapOf()
 
-        val childNodeNames: MutableSet<String> = mutableSetOf()
-        val childNodeData = List(node.mNumChildren()) { i ->
-            val childNode = AINode.create(node.mChildren()!![i])
-            childNodeNames.add(childNode.mName().dataString())
-            walkNodes(
-                boneNames,
-                childNode,
-                parentId + i + 1
+        val stack = ArrayDeque<AINode>().apply { addLast(rootNode) }
+
+        var currentId = 0
+        var highestId = 1
+        while (!stack.isEmpty()) {
+            val node = stack.removeFirst()
+
+            // skeleton node data
+            val name = node.mName().dataString()
+            val nodeId = currentId
+            // where each bone/model is relative to it's parent
+            val localTransform = node.mTransformation().toJoml()
+            val isBone = boneNames.contains(name)
+
+            // global structs with node data
+            nodeToMeshIndices.put(nodeId, List(node.mNumMeshes()) { i ->
+                node.mMeshes()!!.get(i)
+            })
+            nameToNodeId.getOrPut(name) {
+                mutableListOf()
+            }.add(nodeId)
+
+            val childNodeIds: MutableSet<Int> = mutableSetOf()
+            for (i in 0 until node.mNumChildren()) {
+                childNodeIds.add(highestId)
+                stack.addLast(AINode.create(node.mChildren()!![i]))
+                highestId++
+            }
+
+            val skeletonNode = SkeletonNode(
+                nodeId,
+                name,
+                localTransform,
+                childNodeIds.toList(),
+                isBone,
             )
-        }
-
-        val nodeToMeshIndices = mutableMapOf(name to List(node.mNumMeshes()) { i ->
-            node.mMeshes()!!.get(i)
-        })
-        val nodeMap: MutableMap<String, SkeletonNode> = mutableMapOf()
-        childNodeData.forEach {
-            nodeToMeshIndices.putAll(it.nodeToMeshIndices)
-            nodeMap.putAll(it.nodeMap)
-        }
-
-        val skeletonNode = SkeletonNode(
-            name,
-            localTransform,
-            childNodeNames.toList(),
-            boneNames.contains(name),
-            parentName
-        )
-        if (nodeMap.put(name, skeletonNode) != null) {
-            error("Cycle detected in node hierarchy at $name")
+            nodeMap.put(nodeId, skeletonNode)
+            currentId++
         }
 
         return NodeTraversalData(
             nodeMap,
+            nameToNodeId,
             nodeToMeshIndices,
         )
     }
 
     fun importAnimation(
-        animation: AIAnimation
+        animation: AIAnimation,
+        nameToNodeId: MutableMap<String, MutableList<Int>>
     ): Animation {
         val nodeAnimations = List(animation.mNumChannels()) { channelIndex ->
             val nodeAnim = AINodeAnim.create(animation.mChannels()!![channelIndex])
 
             val nodeName = nodeAnim.mNodeName().dataString()
+            val mappedNodeIds = nameToNodeId.getValue(nodeName)
+            require(mappedNodeIds.size == 1) {
+                "Cannot have an animation that references multiple nodes with the same name! $nodeName"
+            }
 
             val positionKeys = List(nodeAnim.mNumPositionKeys()) {
                 val vec = nodeAnim.mPositionKeys()!![it].mValue()
@@ -411,11 +428,42 @@ class ModelLoader {
                 Keyframe(time, Vector3f(vec.x(), vec.y(), vec.z()))
             }
 
-            val rotationKeys = List(nodeAnim.mNumRotationKeys()) {
-                val quat = nodeAnim.mRotationKeys()!![it].mValue()
-                val time = nodeAnim.mRotationKeys()!![it].mTime().toFloat()
-                Keyframe(time, Quaternionf(quat.x(), quat.y(), quat.z(), quat.w()).normalize())
+            val assimpKeys = nodeAnim.mRotationKeys()
+            val rotationKeys = mutableListOf<Keyframe<Quaternionf>>()
+            var lastQuat: Quaternionf? = null
+
+            for (it in 0 until nodeAnim.mNumRotationKeys()) {
+                val key = assimpKeys!![it].mValue()
+                val time = assimpKeys[it].mTime().toFloat()
+                val q = Quaternionf(key.x(), key.y(), key.z(), key.w())
+
+                val corrected = if (lastQuat != null && lastQuat.dot(q) < 0f) {
+                    Quaternionf(-q.x, -q.y, -q.z, -q.w) // flip hemisphere
+                } else { q }.normalize()
+                rotationKeys.add(Keyframe(time, corrected))
+                lastQuat = corrected
             }
+
+            for (i in 1 until rotationKeys.size) {
+                val a = rotationKeys[i - 1].value
+                val b = rotationKeys[i].value
+                val dot = a.dot(b)
+                if (dot < 0f) {
+                    println("⚠️ Hemisphere flip detected between key $i-1 and $i with dot = $dot")
+                }
+            }
+
+            if (animation.mName().dataString() == "walk") {
+                for ((i, key) in rotationKeys.withIndex()) {
+                    println("[$i] t=${key.time} rot=${key.value}")
+                }
+            }
+
+            // val rotationKeys = List(nodeAnim.mNumRotationKeys()) {
+            //     val quat = nodeAnim.mRotationKeys()!![it].mValue()
+            //     val time = nodeAnim.mRotationKeys()!![it].mTime().toFloat()
+            //     Keyframe(time, Quaternionf(quat.x(), quat.y(), quat.z(), quat.w()).normalize())
+            // }
 
             val scaleKeys = List(nodeAnim.mNumScalingKeys()) {
                 val vec = nodeAnim.mScalingKeys()!![it].mValue()
@@ -424,12 +472,12 @@ class ModelLoader {
             }
 
             NodeAnimation(
-                nodeName,
+                mappedNodeIds.first(),
                 positionKeys,
                 rotationKeys,
                 scaleKeys
             )
-        }.associateBy { it.nodeName }
+        }.associateBy { it.nodeId }
 
         return Animation(
             animation.mName().dataString(),

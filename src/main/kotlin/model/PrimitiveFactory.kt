@@ -63,16 +63,17 @@ object PrimitiveFactory {
             listOf(mesh),
             Skeleton(
                 "unnamedSkeleton",
-                "root",
+                0,
                 mapOf(
-                    "root" to SkeletonNode(
+                    0 to SkeletonNode(
+                        0,
                         "root",
                         Matrix4f(),
                         isBone = false
                     )
                 ),
             ),
-            mutableMapOf("root" to listOf(0))
+            mutableMapOf(0 to listOf(0))
         )
     }
 }

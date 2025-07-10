@@ -61,16 +61,18 @@ class BVHTree(val root: BVHNode) {
 
     companion object {
         fun buildForModel(model: Model): BVHTree {
-            return BVHTree(buildBVHForModel(model, model.skeleton.rootName))
+            val bvhTree = buildBVHForModel(model, model.skeleton.rootId)
+            require (bvhTree != null) { "BVHTree is empty! model must not have any geometry." }
+            return BVHTree(bvhTree)
         }
 
-        private fun buildBVHForModel(model: Model, currentNode: String): BVHNode {
-            val skeletonNode = model.skeleton.nodeMap.getValue(currentNode)
+        private fun buildBVHForModel(model: Model, currentNodeId: Int): BVHNode? {
+            val skeletonNode = model.skeleton.nodeMap.getValue(currentNodeId)
 
             val childNodes = mutableListOf<BVHNode>()
 
             // Create leaf nodes for each mesh
-            for (meshIndex in model.nodeToMeshIndices.getValue(skeletonNode.name)) {
+            for (meshIndex in model.nodeIdToMeshIndices.getValue(skeletonNode.id)) {
                 val mesh = model.meshes[meshIndex]
                 val localAABB = mesh.computeAABB()
                 //val worldAABB = model.modelM.let { localAABB.transformedBy(it.getRef()) }
@@ -78,8 +80,17 @@ class BVHTree(val root: BVHNode) {
             }
 
             // Recursively build child BVH groups
-            for (node in skeletonNode.childNames) {
-                childNodes.add(buildBVHForModel(model, node))
+            for (node in skeletonNode.childIds) {
+                val child = buildBVHForModel(model, node)
+                // Its possible that a model imported from assimp has empty nodes that do not have children. these
+                // can be safely ignored since they wouldn't have a bounding box
+                if (child != null) {
+                    childNodes.add(child)
+                }
+            }
+
+            if (childNodes.isEmpty()) {
+                return null
             }
 
             // assume that all children nodes will be wrapped in a group node. This could be optimized better
@@ -90,7 +101,7 @@ class BVHTree(val root: BVHNode) {
             return BVHGroup(
                 aabb,
                 childNodes,
-                model.skeletonAnimator.nodeTransforms.getValue(currentNode).localTransform
+                model.skeletonAnimator.nodeTransforms.getValue(currentNodeId).localTransform
             )
         }
     }

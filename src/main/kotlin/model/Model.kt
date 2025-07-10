@@ -27,7 +27,7 @@ class Model(
     val name: String,
     val meshes: List<Mesh>,
     val skeleton: Skeleton,
-    val nodeToMeshIndices: MutableMap<Int, List<Int>>,
+    val nodeIdToMeshIndices: MutableMap<Int, List<Int>>,
     modelMatrix: Matrix4f = Matrix4f()
 ): Intersectable, Updatable, GLResource(), Drawable {
     var modelMatrix: Matrix4f = modelMatrix
@@ -61,20 +61,20 @@ class Model(
         //shader.setUniform("uModel", modelMatrix)
         //shader.setUniform("uModelInverse", modelMatrix.invert(Matrix4f()))
 
-        drawMeshByNode(skeleton.rootName, shader)
+        drawMeshByNode(skeleton.rootId, shader)
     }
 
-    private fun drawMeshByNode(nodeName: String, shader: ShaderProgram) {
-        val nodeTransforms = skeletonAnimator.nodeTransforms.getValue(nodeName)
+    private fun drawMeshByNode(nodeId: Int, shader: ShaderProgram) {
+        val nodeTransforms = skeletonAnimator.nodeTransforms.getValue(nodeId)
         // Upload final matrix for this set of meshes (uniform name depends on shader)
         shader.setUniform(
             "uModel",
             nodeTransforms.finalTransform ?: nodeTransforms.globalTransform
         )
-        nodeToMeshIndices.getValue(nodeName).forEach {
+        nodeIdToMeshIndices.getValue(nodeId).forEach {
             meshes[it].draw(shader)
         }
-        skeleton.nodeMap.getValue(nodeName).childNames.forEach {
+        skeleton.nodeMap.getValue(nodeId).childIds.forEach {
             drawMeshByNode(it, shader)
         }
     }
@@ -116,7 +116,7 @@ class Model(
 class SkeletonAnimator(val skeleton: Skeleton, val modelMatrix: TrackedMatrix) {
     var currentAnimation: Animation? = null
     var currentTime: Float = 0f
-    var nodeTransforms: MutableMap<String, SkeletonNodeTransforms> = mutableMapOf()
+    var nodeTransforms: MutableMap<Int, SkeletonNodeTransforms> = mutableMapOf()
 
     init {
         nodeTransforms = skeleton.nodeMap.mapValues {
@@ -125,13 +125,13 @@ class SkeletonAnimator(val skeleton: Skeleton, val modelMatrix: TrackedMatrix) {
                 TrackedMatrix(Matrix4f(it.value.localTransform))
             )
         }.toMutableMap()
-        updateGlobalTransforms(skeleton.rootName, modelMatrix.getRef())
+        updateGlobalTransforms(skeleton.rootId, modelMatrix.getRef())
     }
 
     fun update(deltaTime: Float) {
         currentAnimation?.let {
             // Advance time
-            currentTime += deltaTime * it.ticksPerSecond
+            currentTime += deltaTime/5 * it.ticksPerSecond
             val timeInTicks = currentTime % (it.duration)
 
             // Apply animation
@@ -139,16 +139,16 @@ class SkeletonAnimator(val skeleton: Skeleton, val modelMatrix: TrackedMatrix) {
         }
 
         // After setting local transforms, propagate global transforms
-        updateGlobalTransforms(skeleton.rootName, modelMatrix.getRef())
+        updateGlobalTransforms(skeleton.rootId, modelMatrix.getRef())
     }
 
     fun applyAnimationToSkeleton(skeleton: Skeleton, animation: Animation, time: Float) {
-        for ((boneName, nodeAnim) in animation.nodeAnimations) {
+        for ((boneNodeId, nodeAnim) in animation.nodeAnimations) {
             val position = interpolateKeyframes(time, animation.duration, nodeAnim.positionKeys, animation.isLoop)
             val rotation = interpolateKeyframes(time, animation.duration, nodeAnim.rotationKeys, animation.isLoop)
             val scale = interpolateKeyframes(time, animation.duration, nodeAnim.scaleKeys, animation.isLoop)
 
-            nodeTransforms.getValue(boneName).localTransform.mutate {
+            nodeTransforms.getValue(boneNodeId).localTransform.mutate {
                 translationRotateScale(position, rotation, scale)
             }
         }
@@ -181,24 +181,25 @@ class SkeletonAnimator(val skeleton: Skeleton, val modelMatrix: TrackedMatrix) {
 
         return when (val v0 = key0.value) {
             is Vector3f -> Vector3f(v0).lerp(key1.value as Vector3f, localT)
-            is Quaternionf -> Quaternionf(v0).slerp(key1.value as Quaternionf, localT)
+            is Quaternionf -> Quaternionf(v0)
+            // is Quaternionf -> Quaternionf(v0).slerp(key1.value as Quaternionf, localT)
             else -> error("Unsupported keyframe type")
         } as T
     }
 
-    fun updateGlobalTransforms(nodeName: String, parentGlobal: Matrix4f = Matrix4f()) {
-        val currentNode = skeleton.nodeMap.getValue(nodeName)
-        val currentTransforms = nodeTransforms.getValue(nodeName)
+    fun updateGlobalTransforms(nodeId: Int, parentGlobal: Matrix4f = Matrix4f()) {
+        val currentNode = skeleton.nodeMap.getValue(nodeId)
+        val currentTransforms = nodeTransforms.getValue(nodeId)
 
         parentGlobal.mul(currentTransforms.localTransform.getRef(), currentTransforms.globalTransform)
         if (currentNode.isBone) {
             parentGlobal.mul(
-                skeleton.inverseBindPoseMap.getValue(nodeName),
+                skeleton.inverseBindPoseMap.getValue(nodeId),
                 currentTransforms.finalTransform ?: Matrix4f()
             )
         }
 
-        currentNode.childNames.forEach {
+        currentNode.childIds.forEach {
             updateGlobalTransforms(it, currentTransforms.globalTransform)
         }
     }

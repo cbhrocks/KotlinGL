@@ -22,20 +22,21 @@ data class Bone (
 /**
  * the static immutable data describing a skeleton. This should be only created once each time a model is loaded.
  *
+ * @property id a unique numerical id created for each skeleton node when imported with ASSIMP
  * @property name the name attached to each aiNode object loaded in with ASSIMP. This name is used to link mesh bones
  * to the node.
- * @property parentName the name of the parent aiNode. This is used to establish the node hierarchy
  * @property localTransform the local bind transformation from parent node to this node.
- * @property childNames a list of child aiNode names.
+ * @property childIds a list of child SkeletonNode ids.
  * @property isBone whether this node is used as a bone by a mesh.
+ * @property parentId the id of the parent SkeletonNode. This is used to establish the node hierarchy
  */
 data class SkeletonNode(
     val id: Int,
     val name: String,
     val localTransform: Matrix4f,
-    val childNames: List<String> = listOf(),
+    val childIds: List<Int> = listOf(),
     val isBone: Boolean,
-    val parentName: String? = null,
+    val parentId: Int? = null,
 )
 
 /**
@@ -45,7 +46,6 @@ data class SkeletonNode(
  */
 data class SkeletonNodeTransforms(
     val id: Int,
-    val name: String,
     var localTransform: TrackedMatrix, // Local transform (T * R * S)
     var globalTransform: Matrix4f = Matrix4f(), // Computed during animation
     var finalTransform: Matrix4f? = null, // only used if isBone is true. computed by globalTransform * inverseBindPose
