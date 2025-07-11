@@ -8,7 +8,7 @@ data class Animation(
     val duration: Float,
     val ticksPerSecond: Float,
     val nodeAnimations: Map<Int, NodeAnimation>,
-    val isLoop: Boolean = true
+    var isLoop: Boolean = true
 )
 
 data class Keyframe<T>(val time: Float, val value: T)

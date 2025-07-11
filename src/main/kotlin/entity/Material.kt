@@ -19,6 +19,7 @@ data class Material(
     var reflect: Float = 0f,
     val shininess: Float = 1f,
     val uvScale: Vector2fc = Vector2f(1f, 1f),
+    val name: String? = null
 ): GLResource() {
 
     override fun initGL(){

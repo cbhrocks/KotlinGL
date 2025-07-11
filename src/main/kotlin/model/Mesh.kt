@@ -44,7 +44,8 @@ class Mesh(
     val vertices: List<Vertex>,
     val indices: List<Int>,
     val material: Material,
-    val bones: List<Bone> = listOf()
+    val bones: List<Bone> = listOf(),
+    val name: String? = null
 ): GLResource(), Bounded, Drawable {
     var vaoId: Int = 0
     var vboId: Int = 0

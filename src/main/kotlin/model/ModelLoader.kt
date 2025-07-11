@@ -296,6 +296,11 @@ class ModelLoader {
         // load diffuse textures
         val diffuseTextures = importMaterialTexture(material, aiTextureType_DIFFUSE, scene, modelDirectory)
 
+        val materialName = AIString.calloc()
+        aiGetMaterialString(material, AI_MATKEY_NAME, 0, 0, materialName)
+        val nameString = materialName.dataString()
+        materialName.free()
+
         // Add more properties like reflectivity, shininess, etc., if needed
         return Material(
             diffuseTextures.getOrNull(0),
@@ -304,6 +309,7 @@ class ModelLoader {
                 color.g(),
                 color.b()
             ).toColor(),
+            name=nameString
         )
     }
 
@@ -351,7 +357,7 @@ class ModelLoader {
             Bone(boneName, offsetMatrix, weights)
         }
 
-        return Mesh(vertices, indices, material, meshBones)
+        return Mesh(vertices, indices, material, meshBones, aiMesh.mName().dataString())
     }
 
     fun walkNodes(

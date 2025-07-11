@@ -106,8 +106,9 @@ fun main() {
 
         scene.initGL()
 
-        val devTools = DevTools(windowManager.window, scene).apply { init() }
+        val timer = FrameTimer()
 
+        val devTools = DevTools(windowManager.window, scene, timer).apply { init() }
 
         val compositor = Compositor(
             480,
@@ -136,11 +137,9 @@ fun main() {
             devTools
         )
 
-        val timer = FrameTimer()
         while (!windowManager.shouldClose()) {
             timer.update()
             val dt = timer.deltaTime
-            println("New Frame: ${timer.totalTime} (${timer.deltaTime})")
 
             devTools.update(dt)
             scene.update(dt)

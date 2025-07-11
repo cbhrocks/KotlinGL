@@ -1,6 +1,8 @@
 package org.kotlingl.math
 
 import org.joml.Matrix4f
+import org.joml.Quaternionf
+import org.joml.Vector3f
 import org.lwjgl.assimp.AIMatrix4x4
 
 val EPSILON: Float
@@ -16,3 +18,11 @@ fun AIMatrix4x4.toJoml(): Matrix4f {
 }
 
 //infix fun Vector3f.dot(other: Vector3f) = Vector3f.dot(other)
+
+fun Vector3f.toFloatArray(): FloatArray {
+    return floatArrayOf(this.x, this.y, this.z)
+}
+
+fun Quaternionf.toFloatArray(): FloatArray {
+    return floatArrayOf(this.x, this.y, this.z, this.w)
+}
