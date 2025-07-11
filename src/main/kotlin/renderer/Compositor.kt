@@ -2,6 +2,7 @@ package org.kotlingl.renderer
 
 import ShaderProgram
 import org.kotlingl.shapes.ScreenQuad
+import org.kotlingl.utils.checkGLError
 import org.lwjgl.opengl.GL11
 import org.lwjgl.opengl.GL11.*
 import org.lwjgl.opengl.GL13.GL_TEXTURE0
@@ -62,6 +63,7 @@ class Compositor(var renderWidth: Int, var renderHeight: Int, var viewportWidth:
             glBindTexture(GL_TEXTURE_2D, renderTargets.getValue("ui").textureId)
             glDrawArrays(GL_TRIANGLES, 0, 6)
         }
+        checkGLError("compositor compose to screen")
     }
 
     fun getTarget(renderTarget: String): Framebuffer {

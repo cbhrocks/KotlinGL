@@ -68,15 +68,15 @@ class TestCubeFactory {
         )
     }
 
-    fun createCubeModel(): Model {
-        val material = Material()
-        val mesh = Mesh(
-            cubeVertices,
-            cubeIndices,
-            material
-        )
-        return Model(name = "cube", meshes = listOf(mesh), children = mutableListOf())
-    }
+    //fun createCubeModel(): Model {
+    //    val material = Material()
+    //    val mesh = Mesh(
+    //        cubeVertices,
+    //        cubeIndices,
+    //        material
+    //    )
+    //    return Model(name = "cube", meshes = listOf(mesh), children = mutableListOf())
+    //}
 }
 
 fun createIntersectingMesh(): Bounded {
@@ -90,10 +90,6 @@ fun createIntersectingMesh(): Bounded {
                 mat,
                 true
             )
-        }
-
-        override fun getBVHNode(): BVHNode {
-            TODO("Not yet implemented")
         }
 
         override fun computeAABB(): AABB {

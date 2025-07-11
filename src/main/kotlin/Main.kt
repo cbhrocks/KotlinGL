@@ -106,7 +106,8 @@ fun main() {
 
         scene.initGL()
 
-        val devTools = DevTools(windowManager.window, scene)
+        val devTools = DevTools(windowManager.window, scene).apply { init() }
+
 
         val compositor = Compositor(
             480,
@@ -130,8 +131,9 @@ fun main() {
             BackgroundRenderer(backgroundShader),
             RayTraceRenderer(),
             WorldRenderer(),
-            UIRenderer(devTools),
+            UIRenderer(),
             compositor,
+            devTools
         )
 
         val timer = FrameTimer()
@@ -151,6 +153,7 @@ fun main() {
             windowManager.pollEvents()
             windowManager.swapBuffers()
         }
+        devTools.shutdown()
     }
 
     // Terminate GLFW and free the error callback

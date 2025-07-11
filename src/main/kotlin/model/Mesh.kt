@@ -148,7 +148,7 @@ class Mesh(
         material.bind(shader)
         glBindVertexArray(vaoId)
         glDrawElements(GL_TRIANGLES, indices.size, GL_UNSIGNED_INT, 0)
-        checkGLError("glDrawElements")
+        checkGLError("mesh glDrawElements")
         glBindVertexArray(0)
     }
 

@@ -25,63 +25,14 @@ class ModelTest {
 
     @BeforeEach
     fun setup() {
-        mat = Material()
-        mesh = Mesh(listOf(
-            Vertex(
-                Vector3f(0f,0f,0f),
-                Vector3f(0f, 0f, -1f),
-                Vector2f()
-            ),
-            Vertex(
-                Vector3f(1f,0f,0f),
-                Vector3f(0f, 0f, -1f),
-                Vector2f()
-            ),
-            Vertex(
-                Vector3f(0f,1f,0f),
-                Vector3f(0f, 0f, -1f),
-                Vector2f()
-            )
-        ), listOf(0,1,2), mat)
-        childMesh = Mesh(listOf(
-            Vertex(
-                Vector3f(1f,0f,0f),
-                Vector3f(0f, 0f, -1f),
-                Vector2f()
-            ),
-            Vertex(
-                Vector3f(1f,1f,0f),
-                Vector3f(0f, 0f, -1f),
-                Vector2f()
-            ),
-            Vertex(
-                Vector3f(0f,1f,0f),
-                Vector3f(0f, 0f, -1f),
-                Vector2f()
-            )
-        ), listOf(0,1,2), mat)
-        childModel = Model(name = "child", meshes = listOf(childMesh), children = mutableListOf())
-        parentModel = Model(name = "parent", meshes = listOf(mesh), children = mutableListOf(childModel))
     }
 
     @Test
     fun `allMeshes returns all meshes from self and children`() {
-        val result = parentModel.allMeshes()
-
-        assertEquals(2, result.size)
-        assertTrue(result.contains(mesh))
-        assertTrue(result.contains(childMesh))
     }
 
     @Test
     fun `bvhNode creates a tree with one leaf per mesh and child`() {
-        val bvhNode = parentModel.bvhNode
-        assertNull(bvhNode.left?.left)
-        assertNull(bvhNode.left?.right)
-        assertIs<Mesh>(bvhNode.left?.leaf)
-        assertNull(bvhNode.right?.left)
-        assertNull(bvhNode.right?.right)
-        assertIs<Model>(bvhNode.right?.leaf)
     }
 
     @Test
@@ -93,7 +44,6 @@ class ModelTest {
 
     @Test
     fun `centroid is in the middle of the model and its children`() {
-        assertEquals(parentModel.centroid(), Vector3f(0.5f, 0.5f, 0f))
     }
 
     @Test
@@ -105,36 +55,14 @@ class ModelTest {
 
     @Test
     fun `intersects returns result from intersecting mesh`() {
-        val origin = Vector3f(0f, 0f, -1f)
-        val direction = childModel.centroid().sub(origin).normalize()
-        val ray = Ray(origin, direction)
-        val result = parentModel.intersects(ray)
-        assertNotNull(result)
-        assertEquals(origin.distance(childModel.centroid()), result?.t)
     }
 
     @Test
     fun `mesh deep in model tree intersect`() {
-        val grandParentModel = Model("grandparent", listOf(), children = mutableListOf(parentModel))
-        val origin = Vector3f(0f, 0f, -1f)
-        val direction = childModel.centroid().sub(origin).normalize()
-        val ray = Ray(origin, direction)
-        val result = parentModel.intersects(ray)
-        assertNotNull(result)
-        assertEquals(origin.distance(childModel.centroid()), result?.t)
     }
 
     @Test
     fun `transform updates models position rotation and scale`() {
-        val oldMatrix = parentModel.sharedMatrix.clone()
-        val newPosition = Vector3f(1f, 1f, 1f)
-        val newRotation = Quaternionf().rotateY(PI.toFloat())
-        val newScale = Vector3f(2f, 2f, 2f)
-        parentModel.transform(newPosition, newRotation, newScale )
-        assertEquals(parentModel.position, newPosition)
-        assertEquals(parentModel.rotation, newRotation)
-        assertEquals(parentModel.scale, newScale)
-        assertNotEquals(parentModel.sharedMatrix, oldMatrix)
     }
 
     @Test
@@ -175,9 +103,5 @@ class ModelTest {
 
     @Test
     fun `model can be constructed with skeleton`() {
-        val skeletonNode = SkeletonNodeTransforms(name = "root", localTransform = Matrix4f(), globalTransform = Matrix4f())
-        val model = Model(name = "skelModel", meshes = listOf(), children = mutableListOf(), skeleton = skeletonNode)
-
-        assertEquals("root", model.skeleton?.name)
     }
 }

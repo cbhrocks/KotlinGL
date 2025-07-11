@@ -1,6 +1,7 @@
 package org.kotlingl.renderer
 
 import org.kotlingl.CameraManager
+import org.kotlingl.DevTools
 import org.kotlingl.Scene
 
 class RenderPipeline(
@@ -9,6 +10,7 @@ class RenderPipeline(
     val world: WorldRenderer,
     val ui: UIRenderer,
     val compositor: Compositor,
+    var devTools: DevTools? = null
 ) {
     val renderOrder = listOf("background_far", "background_near", "world", "foreground", "ui")
 
@@ -21,5 +23,6 @@ class RenderPipeline(
         ui.render(scene, cameras.getCamera("ui"), compositor.getTarget("ui"))
 
         compositor.composeToScreen()
+        devTools?.render()
     }
 }

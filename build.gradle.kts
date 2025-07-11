@@ -8,7 +8,7 @@ group = "org.example"
 version = "1.0-SNAPSHOT"
 
 val lwjglVersion = "3.3.6"
-val imguiVersion = "1.86.10" // or latest at https://github.com/SpaiR/imgui-java
+val imguiVersion = "1.89.0" // or latest at https://github.com/SpaiR/imgui-java
 val jomlVersion = "1.10.8"
 
 val lwjglNatives = Pair(
@@ -67,7 +67,10 @@ dependencies {
 
     implementation("io.github.spair:imgui-java-binding:${imguiVersion}")
     implementation("io.github.spair:imgui-java-lwjgl3:${imguiVersion}")
-    implementation("io.github.spair:imgui-java-natives-windows:${imguiVersion}")
+    if (lwjglNatives == "natives-macos-arm64")
+        implementation("io.github.spair:imgui-java-natives-macos:${imguiVersion}")
+    else
+        implementation("io.github.spair:imgui-java-natives-windows:${imguiVersion}")
 
     testImplementation(kotlin("test"))
 }

@@ -3,6 +3,7 @@ package org.kotlingl.renderer
 import ShaderProgram
 import org.kotlingl.Camera
 import org.kotlingl.Scene
+import org.kotlingl.utils.checkGLError
 import org.lwjgl.opengl.GL11.GL_DEPTH_TEST
 import org.lwjgl.opengl.GL11.glDisable
 import org.lwjgl.opengl.GL11.glEnable
@@ -19,5 +20,6 @@ class BackgroundRenderer(
             scene.draw(shader, setOf("background"))
             glDisable(GL_DEPTH_TEST)
         }
+        checkGLError("BackgroundRenderer render")
     }
 }

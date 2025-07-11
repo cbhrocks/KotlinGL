@@ -3,12 +3,13 @@ package org.kotlingl.renderer
 import org.kotlingl.Camera
 import org.kotlingl.DevTools
 import org.kotlingl.Scene
+import org.kotlingl.utils.checkGLError
 
-class UIRenderer(var devTools: DevTools? = null): Renderer {
+class UIRenderer(): Renderer {
 
     override fun render(scene: Scene, camera: Camera, target: Framebuffer) {
         target.withBind {
-            devTools?.render()
         }
+        checkGLError("UIRenderer render")
     }
 }
