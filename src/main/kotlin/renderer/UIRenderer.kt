@@ -1,10 +1,14 @@
 package org.kotlingl.renderer
 
 import org.kotlingl.Camera
+import org.kotlingl.DevTools
 import org.kotlingl.Scene
 
-class UIRenderer: Renderer {
+class UIRenderer(var devTools: DevTools? = null): Renderer {
+
     override fun render(scene: Scene, camera: Camera, target: Framebuffer) {
-        return
+        target.withBind {
+            devTools?.render()
+        }
     }
 }

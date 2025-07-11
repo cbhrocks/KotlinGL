@@ -28,6 +28,17 @@ class Compositor(var renderWidth: Int, var renderHeight: Int, var viewportWidth:
         quadShader = ShaderProgram(vertexSource, fragmentSource)
     }
 
+    fun withBlend(block: () -> Unit) {
+        try {
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+            block()
+        }
+        finally {
+            glDisable(GL_BLEND)
+        }
+    }
+
     fun composeToScreen() {
         // Bind default framebuffer (screen)
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
@@ -39,12 +50,18 @@ class Compositor(var renderWidth: Int, var renderHeight: Int, var viewportWidth:
         // Bind quad shader and texture
         quadShader.use()
         glBindVertexArray(screenQuad.vaoId)
-        glActiveTexture(GL_TEXTURE0)
-        glBindTexture(GL_TEXTURE_2D, renderTargets.getValue("background").textureId)
         quadShader.setUniform("screenTexture", 0)
 
-        // Draw fullscreen quad
-        glDrawArrays(GL_TRIANGLES, 0, 6)
+        withBlend {
+            // // draw background
+            glActiveTexture(GL_TEXTURE0)
+            glBindTexture(GL_TEXTURE_2D, renderTargets.getValue("background").textureId)
+            glDrawArrays(GL_TRIANGLES, 0, 6)
+
+            // draw ui
+            glBindTexture(GL_TEXTURE_2D, renderTargets.getValue("ui").textureId)
+            glDrawArrays(GL_TRIANGLES, 0, 6)
+        }
     }
 
     fun getTarget(renderTarget: String): Framebuffer {
@@ -54,7 +71,7 @@ class Compositor(var renderWidth: Int, var renderHeight: Int, var viewportWidth:
     fun clearBuffers() {
         for (target in renderTargets) {
             target.value.bind()
-            glClearColor(0f, 0f, 0f, 1f)
+            glClearColor(0f, 0f, 0f, 0f)
             glClear(GL11.GL_COLOR_BUFFER_BIT or GL11.GL_DEPTH_BUFFER_BIT)
         }
         glBindFramebuffer(GL_FRAMEBUFFER, 0)

@@ -8,7 +8,7 @@ class RenderPipeline(
     val backgroundRayTrace: RayTraceRenderer,
     val world: WorldRenderer,
     val ui: UIRenderer,
-    val compositor: Compositor
+    val compositor: Compositor,
 ) {
     val renderOrder = listOf("background_far", "background_near", "world", "foreground", "ui")
 

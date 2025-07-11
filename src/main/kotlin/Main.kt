@@ -1,6 +1,7 @@
 package org.kotlingl
 
 import ShaderProgram
+import imgui.ImGui
 import org.joml.Quaternionf
 import org.joml.Vector3f
 import org.kotlingl.lighting.*
@@ -105,6 +106,8 @@ fun main() {
 
         scene.initGL()
 
+        val devTools = DevTools(windowManager.window, scene)
+
         val compositor = Compositor(
             480,
             240,
@@ -127,8 +130,8 @@ fun main() {
             BackgroundRenderer(backgroundShader),
             RayTraceRenderer(),
             WorldRenderer(),
-            UIRenderer(),
-            compositor
+            UIRenderer(devTools),
+            compositor,
         )
 
         val timer = FrameTimer()
@@ -137,6 +140,7 @@ fun main() {
             val dt = timer.deltaTime
             println("New Frame: ${timer.totalTime} (${timer.deltaTime})")
 
+            devTools.update(dt)
             scene.update(dt)
 
             renderPipeline.render(
