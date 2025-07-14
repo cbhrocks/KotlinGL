@@ -440,22 +440,24 @@ class ModelLoader {
             var lastQuat: Quaternionf? = null
             // val identity = Quaternionf().identity()
 
-            for (it in 0 until nodeAnim.mNumRotationKeys()) {
-                val key = assimpKeys!![it].mValue()
-                val time = assimpKeys[it].mTime().toFloat()
-                val q = Quaternionf(key.x(), key.y(), key.z(), key.w())
+            for (i in 0 until nodeAnim.mNumRotationKeys()) {
+                val key = assimpKeys!![i].mValue()
+                val time = assimpKeys[i].mTime().toFloat()
+                val raw = Quaternionf(key.x(), key.y(), key.z(), key.w()).normalize()
 
-                // flip hemisphere if needed
-                val corrected = if (lastQuat != null && lastQuat.dot(q) < 0f) {
-                    Quaternionf(-q.x, -q.y, -q.z, -q.w).normalize()
-                } else { q.normalize() }
+                // Hemisphere correction
+                val corrected = if (lastQuat != null && lastQuat.dot(raw) < 0f)
+                    Quaternionf(raw).mul(-1f) else raw
 
-                // Check if this is an unwanted identity keyframe
+                // Optional: skip redundant identity-like frames
                 val isIdentity = corrected.angle() < 0.01f
-                val isFirstOrLast = (it == 0 || it == nodeAnim.mNumRotationKeys() - 1)
+                val isFirstOrLast = (i == 0 || i == nodeAnim.mNumRotationKeys() - 1)
 
                 if (!isIdentity || isFirstOrLast) {
                     rotationKeys.add(Keyframe(time, corrected))
+                    lastQuat = corrected
+                } else {
+                    // still update lastQuat to preserve continuity
                     lastQuat = corrected
                 }
             }

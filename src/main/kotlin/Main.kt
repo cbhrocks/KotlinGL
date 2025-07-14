@@ -1,14 +1,10 @@
 package org.kotlingl
 
 import ShaderProgram
-import imgui.ImGui
 import org.joml.Quaternionf
 import org.joml.Vector3f
 import org.kotlingl.lighting.*
 import org.kotlingl.model.ModelLoader
-import org.kotlingl.FrameTimer
-import org.kotlingl.renderer.ModelRenderer
-import org.kotlingl.WindowManager
 import org.kotlingl.model.PrimitiveFactory
 import org.kotlingl.renderer.BackgroundRenderer
 import org.kotlingl.renderer.Compositor
@@ -16,12 +12,28 @@ import org.kotlingl.renderer.RayTraceRenderer
 import org.kotlingl.renderer.RenderPipeline
 import org.kotlingl.renderer.UIRenderer
 import org.kotlingl.renderer.WorldRenderer
-import org.kotlingl.utils.isGLReady
 import org.lwjgl.Version
 import org.lwjgl.glfw.GLFW
 import org.lwjgl.glfw.GLFWErrorCallback
-import org.lwjgl.opengl.GL
 import kotlin.math.PI
+
+object Settings {
+    var screenWidth: Int = 1280
+    var screenHeight: Int = 720
+    var renderWidth: Int = 480
+    var renderHeight: Int = 240
+
+    val listeners = mutableListOf<(settings: Settings) -> Unit>()
+
+    fun addListener(listener: (settings: Settings) -> Unit) {
+        listeners.add(listener)
+    }
+
+    fun update(action: Settings.() -> Unit): Unit {
+        this.action()
+        listeners.forEach {it(this)}
+    }
+}
 
 fun main() {
     val ml = ModelLoader()
@@ -100,7 +112,7 @@ fun main() {
     check(GLFW.glfwInit()) { "Unable to initialize GLFW" }
 
     WindowManager().use { windowManager ->
-        windowManager.initWindow()
+        windowManager.initWindow(Settings.screenWidth, Settings.screenHeight)
         println("Hello LWJGL " + Version.getVersion() + "!")
         InputManager.init(windowManager.window)
 
@@ -111,16 +123,17 @@ fun main() {
         val devTools = DevTools(windowManager.window, scene, timer).apply { init() }
 
         val compositor = Compositor(
-            480,
-            240,
-            windowManager.width,
-            windowManager.height
+            Settings.renderWidth,
+            Settings.renderHeight,
+            Settings.screenWidth,
+            Settings.screenHeight,
         )
         compositor.initGL()
 
-        windowManager.onResize { width, height ->
-            compositor.viewportWidth = width
-            compositor.viewportHeight = height
+        Settings.addListener { it ->
+            compositor.viewportWidth = it.screenWidth
+            compositor.viewportHeight = it.screenHeight
+            compositor.resize(it.renderWidth, it.renderHeight)
         }
 
         val backgroundShader = ShaderProgram(

@@ -42,6 +42,7 @@ class DevTools(
 ) {
     private val imguiGlfw = ImGuiImplGlfw()
     private val imguiGl3 = ImGuiImplGl3()
+    private val settingsWindow = ImBoolean(false)
     private val sceneWindow = SceneWindow(ImBoolean(false), scene)
     private val statusBar = FPSWindow(ImBoolean(true), frameTimer)
     private val modelWindows = mutableMapOf<String, ModelWindow>()
@@ -83,6 +84,7 @@ class DevTools(
         }
 
         createMainMenuBar()
+        createSettingsWindow()
         createSceneManagerWindow()
         createModelWindows()
         createStatusBar()
@@ -93,6 +95,7 @@ class DevTools(
         mainViewport.addFlags(ImGuiWindowFlags.MenuBar)
         if (ImGui.beginMainMenuBar()) {
             if (ImGui.beginMenu("View")) {
+                ImGui.menuItem("Settings", null, settingsWindow)
                 ImGui.menuItem("Scene Manager", null, sceneWindow.open)
                 ImGui.separator()
                 if (ImGui.beginMenu("Status Bar")) {
@@ -105,6 +108,27 @@ class DevTools(
             }
             ImGui.endMainMenuBar()
         }
+    }
+
+    fun createSettingsWindow() {
+        if (!settingsWindow.get())
+            return
+
+        if (ImGui.begin("Settings", settingsWindow)) {
+            val windowDimensionsArray = intArrayOf(Settings.screenWidth, Settings.screenHeight)
+            val renderDimensionsArray = intArrayOf(Settings.renderWidth, Settings.renderHeight)
+
+            ImGui.inputInt2("Window Dimensions", windowDimensionsArray)
+            ImGui.inputInt2("Render Dimensions", renderDimensionsArray)
+
+            Settings.update {
+                screenWidth = windowDimensionsArray[0]
+                screenHeight = windowDimensionsArray[1]
+                renderWidth = renderDimensionsArray[0]
+                renderHeight = renderDimensionsArray[1]
+            }
+        }
+        ImGui.end()
     }
 
     fun createSceneManagerWindow() {
@@ -157,15 +181,17 @@ class DevTools(
         }
 
         val model = modelData.model
-
         val posArray = model.position.toFloatArray()
         val scaleArray = model.scale.toFloatArray()
+        val animationSpeedArray = floatArrayOf(model.skeletonAnimator.animationSpeed)
+
         ImGui.separatorText("Transforms")
         ImGui.dragFloat3("Position", posArray)
         ImGui.dragFloat3("Rotation", modelData.rotationTransform)
         ImGui.dragFloat3("Scale", scaleArray)
 
         ImGui.separatorText("Animations")
+        ImGui.dragFloat("AnimationSpeed", animationSpeedArray)
         ImGui.beginChild("Animations", ImVec2(ImGui.getContentRegionAvailX(), 260f))
         model.skeleton.animations.forEach {
             ImGui.text(it.value.name)
@@ -199,6 +225,7 @@ class DevTools(
             ),
             Vector3f(scaleArray)
         )
+        modelData.model.skeletonAnimator.animationSpeed = animationSpeedArray[0]
 
         ImGui.end()
     }

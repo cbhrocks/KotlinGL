@@ -115,8 +115,13 @@ class Model(
 
 class SkeletonAnimator(val skeleton: Skeleton, val modelMatrix: TrackedMatrix) {
     var currentAnimation: Animation? = null
+        set(value) {
+            field = value
+            currentTime = 0f
+        }
     var currentTime: Float = 0f
     var nodeTransforms: MutableMap<Int, SkeletonNodeTransforms> = mutableMapOf()
+    var animationSpeed: Float = 1f
 
     init {
         nodeTransforms = skeleton.nodeMap.mapValues {
@@ -131,8 +136,9 @@ class SkeletonAnimator(val skeleton: Skeleton, val modelMatrix: TrackedMatrix) {
     fun update(deltaTime: Float) {
         currentAnimation?.let {
             // Advance time
-            currentTime += deltaTime/5 * it.ticksPerSecond
-            val timeInTicks = currentTime % (it.duration)
+            currentTime += deltaTime * animationSpeed * it.ticksPerSecond
+
+            val timeInTicks = if (it.isLoop) currentTime % (it.duration) else currentTime.coerceIn(0f, it.duration)
 
             // Apply animation
             applyAnimationToSkeleton(skeleton, it, timeInTicks)
@@ -158,8 +164,6 @@ class SkeletonAnimator(val skeleton: Skeleton, val modelMatrix: TrackedMatrix) {
         if (keys.isEmpty()) throw IllegalArgumentException("No keyframes")
         if (keys.size == 1) return keys[0].value
 
-        val t = if (isLoop) time % duration else time.coerceIn(0f, duration)
-
         // Find two surrounding keyframes
         var i = 0
         while (i < keys.size - 1 && time > keys[i + 1].time) i++
@@ -177,7 +181,7 @@ class SkeletonAnimator(val skeleton: Skeleton, val modelMatrix: TrackedMatrix) {
             // Clamp to last keyframe in non-looping case
             return keys.last().value
         }
-        val localT = ((t - key0.time) / (key1.time - key0.time)).coerceIn(0f, 1f)
+        val localT = ((time - key0.time) / (key1.time - key0.time)).coerceIn(0f, 1f)
 
         return when (val v0 = key0.value) {
             is Vector3f -> Vector3f(v0).lerp(key1.value as Vector3f, localT)

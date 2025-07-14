@@ -20,6 +20,6 @@ class BackgroundRenderer(
             scene.draw(shader, setOf("background"))
             glDisable(GL_DEPTH_TEST)
         }
-        checkGLError("BackgroundRenderer render")
+        checkGLError("BackgroundRendered render")
     }
 }

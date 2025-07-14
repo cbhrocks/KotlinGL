@@ -10,13 +10,10 @@ import java.lang.AutoCloseable
 import java.nio.IntBuffer
 import kotlin.properties.Delegates
 
-class WindowManager: AutoCloseable {
-    var width = 1280
-    var height = 720
-    val resizeListeners = mutableListOf<(Int, Int) -> Unit>()
+class WindowManager(): AutoCloseable {
     var window by Delegates.notNull<Long>()
 
-    fun initWindow() {
+    fun initWindow(width: Int, height: Int) {
         // Configure GLFW
         GLFW.glfwDefaultWindowHints() // optional, the current window hints are already the default
         GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE) // the window will stay hidden after creation
@@ -80,14 +77,11 @@ class WindowManager: AutoCloseable {
         GLFW.glfwShowWindow(window)
 
         GLFW.glfwSetFramebufferSizeCallback(window) { _, w, h ->
-            this.width = w
-            this.height = h
-            resizeListeners.forEach { it(w, h) }
+            Settings.update {
+                screenWidth = w
+                screenHeight = h
+            }
         }
-    }
-
-    fun onResize(listener: (Int, Int) -> Unit) {
-        resizeListeners += listener
     }
 
     fun swapBuffers() {
