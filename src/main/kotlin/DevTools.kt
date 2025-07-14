@@ -8,12 +8,20 @@ import imgui.flag.ImGuiWindowFlags
 import imgui.gl3.ImGuiImplGl3
 import imgui.glfw.ImGuiImplGlfw
 import imgui.type.ImBoolean
+import imgui.type.ImFloat
 import org.joml.Quaternionf
 import org.joml.Vector3f
+import org.kotlingl.Input.InputContext
+import org.kotlingl.Input.InputEvent
+import org.kotlingl.Input.InputHandler
 import org.kotlingl.math.toFloatArray
 import org.kotlingl.model.Model
 import org.kotlingl.model.SkeletonNode
 import org.kotlingl.utils.checkGLError
+import org.lwjgl.glfw.GLFW.GLFW_KEY_A
+import org.lwjgl.glfw.GLFW.GLFW_KEY_D
+import org.lwjgl.glfw.GLFW.GLFW_KEY_S
+import org.lwjgl.glfw.GLFW.GLFW_KEY_W
 import org.lwjgl.opengl.ARBFramebufferObject.GL_FRAMEBUFFER
 import org.lwjgl.opengl.ARBFramebufferObject.glBindFramebuffer
 import org.lwjgl.opengl.GL11
@@ -24,36 +32,69 @@ data class ModelWindow (
     val rotationTransform: FloatArray = floatArrayOf()
 )
 
-data class SceneWindow(
-    var open: ImBoolean,
-    val model: Scene
-)
-
 data class FPSWindow(
     var open: ImBoolean,
-    var frameTimer: FrameTimer,
     var showFPS: ImBoolean = ImBoolean(true)
 )
 
-class DevTools(
-    val windowHandle: Long,
-    val scene: Scene,
-    val frameTimer: FrameTimer,
-) {
+object DevTools {
+    lateinit var scene: Scene
+    lateinit var frameTimer: FrameTimer
+
     private val imguiGlfw = ImGuiImplGlfw()
     private val imguiGl3 = ImGuiImplGl3()
-    private val settingsWindow = ImBoolean(false)
-    private val sceneWindow = SceneWindow(ImBoolean(false), scene)
-    private val statusBar = FPSWindow(ImBoolean(true), frameTimer)
+    private val settingsWindowOpen = ImBoolean(false)
+    private val sceneWindowOpen = ImBoolean(false)
+    private val statusBar = FPSWindow(ImBoolean(true))
     private val modelWindows = mutableMapOf<String, ModelWindow>()
+    private val movementEnabled = ImBoolean(false)
 
-    fun init() {
+    val inputContext = object : InputContext {
+        override fun handleInput(event: InputEvent) {
+            val bc = scene.cameraManager.getCamera("background")
+            when (event.key) {
+                GLFW_KEY_W -> {
+                    if (movementEnabled.get()) {
+                        bc.position.y += 0.05f; bc.lookAt.y += 0.05f
+                        event.consumed = true
+                    }
+                }
+                GLFW_KEY_A -> {
+                    if (movementEnabled.get()) {
+                        bc.position.x -= 0.05f; bc.lookAt.x -= 0.05f
+                        event.consumed = true
+                    }
+                }
+                GLFW_KEY_S -> {
+                    if (movementEnabled.get()) {
+                        bc.position.y -= 0.05f; bc.lookAt.y -= 0.05f
+                        event.consumed = true
+                    }
+                }
+                GLFW_KEY_D -> {
+                    if (movementEnabled.get()) {
+                        bc.position.x += 0.05f; bc.lookAt.x += 0.05f
+                        event.consumed = true
+                    }
+                }
+            }
+        }
+    }
+
+    fun init(
+        windowHandle: Long,
+        scene: Scene,
+        frameTimer: FrameTimer,
+    ) {
         ImGui.createContext()
         val io = ImGui.getIO()
         io.iniFilename = null
         ImGui.styleColorsDark()
         imguiGlfw.init(windowHandle, true)
         imguiGl3.init("#version 330") // your GLSL version
+
+        this.scene = scene
+        this.frameTimer = frameTimer
     }
 
     fun newFrame() {
@@ -95,8 +136,8 @@ class DevTools(
         mainViewport.addFlags(ImGuiWindowFlags.MenuBar)
         if (ImGui.beginMainMenuBar()) {
             if (ImGui.beginMenu("View")) {
-                ImGui.menuItem("Settings", null, settingsWindow)
-                ImGui.menuItem("Scene Manager", null, sceneWindow.open)
+                ImGui.menuItem("Settings", null, settingsWindowOpen)
+                ImGui.menuItem("Scene Manager", null, sceneWindowOpen)
                 ImGui.separator()
                 if (ImGui.beginMenu("Status Bar")) {
                     ImGui.menuItem("Show", null, statusBar.open)
@@ -111,35 +152,40 @@ class DevTools(
     }
 
     fun createSettingsWindow() {
-        if (!settingsWindow.get())
+        if (!settingsWindowOpen.get())
             return
 
-        if (ImGui.begin("Settings", settingsWindow)) {
-            val windowDimensionsArray = intArrayOf(Settings.screenWidth, Settings.screenHeight)
+        if (ImGui.begin("Settings", settingsWindowOpen)) {
+            val windowDimensionsArray = intArrayOf(Settings.windowWidth, Settings.windowHeight)
             val renderDimensionsArray = intArrayOf(Settings.renderWidth, Settings.renderHeight)
+            val gameSpeedFloat = ImFloat(Settings.gameSpeed)
 
             ImGui.inputInt2("Window Dimensions", windowDimensionsArray)
             ImGui.inputInt2("Render Dimensions", renderDimensionsArray)
+            ImGui.inputFloat("Game Speed", gameSpeedFloat, 0.1f)
+            ImGui.separatorText("Dev Settings")
+            ImGui.checkbox("Free Movement", movementEnabled)
 
             Settings.update {
-                screenWidth = windowDimensionsArray[0]
-                screenHeight = windowDimensionsArray[1]
+                windowWidth = windowDimensionsArray[0]
+                windowHeight = windowDimensionsArray[1]
                 renderWidth = renderDimensionsArray[0]
                 renderHeight = renderDimensionsArray[1]
+                gameSpeed = gameSpeedFloat.get()
             }
         }
         ImGui.end()
     }
 
     fun createSceneManagerWindow() {
-        if (!sceneWindow.open.get())
+        if (!sceneWindowOpen.get())
             return
 
         val mainViewport = ImGui.getMainViewport();
         ImGui.setNextWindowPos(ImVec2(mainViewport.workPosX + 650, mainViewport.workPosY + 20), ImGuiCond.FirstUseEver);
         ImGui.setNextWindowSize(ImVec2(550f, 680f), ImGuiCond.FirstUseEver);
 
-        if (ImGui.begin("Scene Objects", sceneWindow.open)) {
+        if (ImGui.begin("Scene Objects", sceneWindowOpen)) {
             scene.layers.forEach { layer ->
                 if (ImGui.collapsingHeader("Layer ${layer.key}")) {
                     layer.value.objects.filter {
@@ -191,7 +237,7 @@ class DevTools(
         ImGui.dragFloat3("Scale", scaleArray)
 
         ImGui.separatorText("Animations")
-        ImGui.dragFloat("AnimationSpeed", animationSpeedArray)
+        ImGui.dragFloat("AnimationSpeed", animationSpeedArray, 0.1f, -5.0f, 5.0f)
         ImGui.beginChild("Animations", ImVec2(ImGui.getContentRegionAvailX(), 260f))
         model.skeleton.animations.forEach {
             ImGui.text(it.value.name)

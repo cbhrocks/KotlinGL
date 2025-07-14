@@ -3,6 +3,11 @@ package org.kotlingl
 import ShaderProgram
 import org.joml.Quaternionf
 import org.joml.Vector3f
+import org.kotlingl.Input.InputContext
+import org.kotlingl.Input.InputEvent
+import org.kotlingl.Input.InputHandler
+import org.kotlingl.Input.InputManager
+import org.kotlingl.Input.MenuInputContext
 import org.kotlingl.lighting.*
 import org.kotlingl.model.ModelLoader
 import org.kotlingl.model.PrimitiveFactory
@@ -14,14 +19,22 @@ import org.kotlingl.renderer.UIRenderer
 import org.kotlingl.renderer.WorldRenderer
 import org.lwjgl.Version
 import org.lwjgl.glfw.GLFW
+import org.lwjgl.glfw.GLFW.GLFW_KEY_A
+import org.lwjgl.glfw.GLFW.GLFW_KEY_D
+import org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE
+import org.lwjgl.glfw.GLFW.GLFW_KEY_GRAVE_ACCENT
+import org.lwjgl.glfw.GLFW.GLFW_KEY_S
+import org.lwjgl.glfw.GLFW.GLFW_KEY_W
 import org.lwjgl.glfw.GLFWErrorCallback
 import kotlin.math.PI
 
 object Settings {
-    var screenWidth: Int = 1280
-    var screenHeight: Int = 720
+    var windowWidth: Int = 1280
+    var windowHeight: Int = 720
     var renderWidth: Int = 480
     var renderHeight: Int = 240
+    var gameSpeed: Float = 1.0f
+    var devMode: Boolean = false
 
     val listeners = mutableListOf<(settings: Settings) -> Unit>()
 
@@ -32,6 +45,46 @@ object Settings {
     fun update(action: Settings.() -> Unit): Unit {
         this.action()
         listeners.forEach {it(this)}
+    }
+}
+
+object GameInputContext : InputContext {
+    override fun handleInput(event: InputEvent) {
+        when (event.key) {
+            GLFW_KEY_W -> {
+                if (InputManager.isPressedOrHeld(event.key)) { }
+                event.consumed = true
+            }
+            GLFW_KEY_A -> {
+                if (InputManager.isPressedOrHeld(event.key)) { }
+                event.consumed = true
+            }
+            GLFW_KEY_S -> {
+                if (InputManager.isPressedOrHeld(event.key)) { }
+                event.consumed = true
+            }
+            GLFW_KEY_D -> {
+                if (InputManager.isPressedOrHeld(event.key)) { }
+                event.consumed = true
+            }
+            GLFW_KEY_GRAVE_ACCENT -> {
+                if (InputManager.isPressed(event.key)) {
+                    if (!Settings.devMode) {
+                        InputHandler.registerContext("DevTools", DevTools.inputContext, 10)
+                    }
+                    else {
+                        InputHandler.deregisterContext("DevTools")
+                    }
+                    Settings.update {
+                        devMode = !Settings.devMode
+                    }
+                }
+            }
+        }
+
+        if (InputManager.isPressed(GLFW_KEY_ESCAPE)) {
+            InputHandler.registerContext("MainMenu", MenuInputContext())
+        }
     }
 }
 
@@ -69,13 +122,13 @@ fun main() {
             .build(),
         cameraManager = CameraManager(
             mutableMapOf("world" to Camera(
-                Vector3f(0f, 1f, -4f),
+                Vector3f(0f, 1f, 4f),
                 lookAt = Vector3f(0f, 1f, 0f),
             ), "background" to Camera(
-                Vector3f(0f, 1f, -4f),
+                Vector3f(0f, 1f, 4f),
                 lookAt = Vector3f(0f, 1f, 0f),
             ), "ui" to Camera(
-                Vector3f(0f, 1f, -4f),
+                Vector3f(0f, 1f, 4f),
                 lookAt = Vector3f(0f, 1f, 0f),
             ))
         ),
@@ -112,28 +165,33 @@ fun main() {
     check(GLFW.glfwInit()) { "Unable to initialize GLFW" }
 
     WindowManager().use { windowManager ->
-        windowManager.initWindow(Settings.screenWidth, Settings.screenHeight)
+        windowManager.initWindow(Settings.windowWidth, Settings.windowHeight)
         println("Hello LWJGL " + Version.getVersion() + "!")
         InputManager.init(windowManager.window)
+        InputHandler.registerContext("GameInput", GameInputContext)
 
         scene.initGL()
 
         val timer = FrameTimer()
 
-        val devTools = DevTools(windowManager.window, scene, timer).apply { init() }
+        DevTools.init(windowManager.window, scene, timer)
 
         val compositor = Compositor(
             Settings.renderWidth,
             Settings.renderHeight,
-            Settings.screenWidth,
-            Settings.screenHeight,
+            Settings.windowWidth,
+            Settings.windowHeight,
         )
         compositor.initGL()
 
         Settings.addListener { it ->
-            compositor.viewportWidth = it.screenWidth
-            compositor.viewportHeight = it.screenHeight
+            compositor.viewportWidth = it.windowWidth
+            compositor.viewportHeight = it.windowHeight
             compositor.resize(it.renderWidth, it.renderHeight)
+        }
+
+        Settings.addListener { it ->
+            timer.updateSpeed = it.gameSpeed
         }
 
         val backgroundShader = ShaderProgram(
@@ -147,25 +205,34 @@ fun main() {
             WorldRenderer(),
             UIRenderer(),
             compositor,
-            devTools
         )
 
         while (!windowManager.shouldClose()) {
+            // prerender update
             timer.update()
             val dt = timer.deltaTime
-
-            devTools.update(dt)
+            InputHandler.update()
+            InputManager.update(dt)
             scene.update(dt)
 
+            if (Settings.devMode) {
+                DevTools.update(dt)
+            }
+
+            //render
             renderPipeline.render(
                 scene,
                 scene.cameraManager,
             )
 
+            if(Settings.devMode) {
+                DevTools.render()
+            }
+
             windowManager.pollEvents()
             windowManager.swapBuffers()
         }
-        devTools.shutdown()
+        DevTools.shutdown()
     }
 
     // Terminate GLFW and free the error callback

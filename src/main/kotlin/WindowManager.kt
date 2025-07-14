@@ -78,8 +78,8 @@ class WindowManager(): AutoCloseable {
 
         GLFW.glfwSetFramebufferSizeCallback(window) { _, w, h ->
             Settings.update {
-                screenWidth = w
-                screenHeight = h
+                windowWidth = w
+                windowHeight = h
             }
         }
     }

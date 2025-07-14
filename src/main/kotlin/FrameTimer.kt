@@ -12,10 +12,11 @@ class FrameTimer {
     val updateHistory = ArrayDeque<Long>()
     var fps = 0
         private set
+    var updateSpeed = 1.0f
 
-    fun update() {
+    fun update(deltaTimeOverride: Float? = null) {
         val currentTime = System.nanoTime()
-        deltaTime = (currentTime - lastTime) / 1_000_000_000.0f
+        deltaTime = deltaTimeOverride ?: (((currentTime - lastTime) / 1_000_000_000.0f) * updateSpeed)
         lastTime = currentTime
         totalTime += deltaTime
 
