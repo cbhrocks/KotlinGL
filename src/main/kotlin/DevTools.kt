@@ -13,7 +13,6 @@ import org.joml.Quaternionf
 import org.joml.Vector3f
 import org.kotlingl.Input.InputContext
 import org.kotlingl.Input.InputEvent
-import org.kotlingl.Input.InputHandler
 import org.kotlingl.math.toFloatArray
 import org.kotlingl.model.Model
 import org.kotlingl.model.SkeletonNode
@@ -159,12 +158,14 @@ object DevTools {
             val windowDimensionsArray = intArrayOf(Settings.windowWidth, Settings.windowHeight)
             val renderDimensionsArray = intArrayOf(Settings.renderWidth, Settings.renderHeight)
             val gameSpeedFloat = ImFloat(Settings.gameSpeed)
+            val localDebugRender = ImBoolean(Settings.debugRender)
 
             ImGui.inputInt2("Window Dimensions", windowDimensionsArray)
             ImGui.inputInt2("Render Dimensions", renderDimensionsArray)
             ImGui.inputFloat("Game Speed", gameSpeedFloat, 0.1f)
             ImGui.separatorText("Dev Settings")
             ImGui.checkbox("Free Movement", movementEnabled)
+            ImGui.checkbox("Debug Render", localDebugRender)
 
             Settings.update {
                 windowWidth = windowDimensionsArray[0]
@@ -172,6 +173,7 @@ object DevTools {
                 renderWidth = renderDimensionsArray[0]
                 renderHeight = renderDimensionsArray[1]
                 gameSpeed = gameSpeedFloat.get()
+                debugRender = localDebugRender.get()
             }
         }
         ImGui.end()

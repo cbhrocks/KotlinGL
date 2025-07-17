@@ -2,7 +2,9 @@ package org.kotlingl
 
 import ShaderProgram
 import org.joml.Quaternionf
+import org.joml.Vector2f
 import org.joml.Vector3f
+import org.kotlingl.Collider.BoxCollider
 import org.kotlingl.Input.InputContext
 import org.kotlingl.Input.InputEvent
 import org.kotlingl.Input.InputHandler
@@ -13,6 +15,7 @@ import org.kotlingl.model.ModelLoader
 import org.kotlingl.model.PrimitiveFactory
 import org.kotlingl.renderer.BackgroundRenderer
 import org.kotlingl.renderer.Compositor
+import org.kotlingl.renderer.DebugRenderer
 import org.kotlingl.renderer.RayTraceRenderer
 import org.kotlingl.renderer.RenderPipeline
 import org.kotlingl.renderer.UIRenderer
@@ -35,6 +38,7 @@ object Settings {
     var renderHeight: Int = 240
     var gameSpeed: Float = 1.0f
     var devMode: Boolean = false
+    var debugRender: Boolean = false
 
     val listeners = mutableListOf<(settings: Settings) -> Unit>()
 
@@ -155,6 +159,14 @@ fun main() {
                 )
             )
         ),
+        colliders = mutableListOf(
+            BoxCollider(
+                blockyChar.sharedMatrix,
+                Vector2f(0.5f, 1f),
+                CollisionLayers.PLAYER,
+                CollisionLayers.ENEMY or CollisionLayers.PROJECTILE or CollisionLayers.ENVIRONMENT
+            )
+        )
     )
 
     // Setup an error callback. The default implementation
@@ -199,12 +211,18 @@ fun main() {
             ShaderProgram.loadShaderSource("/shaders/basic.frag"),
         )
 
+        val debugShader = ShaderProgram(
+            ShaderProgram.loadShaderSource("/shaders/debug.vert"),
+            ShaderProgram.loadShaderSource("/shaders/debug.frag")
+        )
+
         val renderPipeline = RenderPipeline(
             BackgroundRenderer(backgroundShader),
             RayTraceRenderer(),
             WorldRenderer(),
             UIRenderer(),
             compositor,
+            DebugRenderer(debugShader).apply { initGL() }
         )
 
         while (!windowManager.shouldClose()) {

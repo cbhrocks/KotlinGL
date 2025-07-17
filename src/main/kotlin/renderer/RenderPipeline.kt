@@ -10,8 +10,9 @@ class RenderPipeline(
     val world: WorldRenderer,
     val ui: UIRenderer,
     val compositor: Compositor,
+    val debug: DebugRenderer? = null
 ) {
-    val renderOrder = listOf("background", "world", "foreground", "ui", "dev")
+    val renderOrder = listOf("background", "world", "foreground", "debug", "ui")
 
     fun render(scene: Scene, cameras: CameraManager) {
         compositor.clearBuffers()
@@ -26,6 +27,7 @@ class RenderPipeline(
             "background" -> background.render(scene, cameras.getCamera("background"), compositor.getTarget("background"))
             "world" -> world.render(scene, cameras.getCamera("world"), compositor.getTarget("world"))
             "ui" -> ui.render(scene, cameras.getCamera("ui"), compositor.getTarget("ui"))
+            "debug" -> debug?.render(scene, cameras.getCamera("world"), compositor.getTarget("ui"))
         }
     }
 }

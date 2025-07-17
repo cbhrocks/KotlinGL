@@ -1,6 +1,7 @@
 package org.kotlingl
 
 import ShaderProgram
+import org.kotlingl.Collider.Collider
 import org.kotlingl.entity.ColorRGB
 import org.kotlingl.entity.Intersection
 import org.kotlingl.lighting.Shader
@@ -37,12 +38,19 @@ data class RayTraceContext(
     val recursionDepth: Int = 0
 )
 
+object CollisionLayers {
+    const val PLAYER = 1 shl 0
+    const val ENEMY = 1 shl 1
+    const val ENVIRONMENT = 1 shl 2
+    const val PROJECTILE = 1 shl 3
+}
+
 data class Scene(
     var shader: Shader,
     var cameraManager: CameraManager,
-    var lights: MutableList<Light> = mutableListOf<Light>(),
+    var lights: MutableList<Light> = mutableListOf(),
     var layers: MutableMap<String, Layer> = mutableMapOf(),
-    var activeCameraIndex: Int = 0
+    var colliders: MutableList<Collider> = mutableListOf()
 ): GLResource() {
 
     fun intersect(ray: Ray, context: RayTraceContext): Intersection? {
@@ -78,11 +86,11 @@ data class Scene(
     fun draw(shader: ShaderProgram, layersToCheck: Set<String>) {
         layers.filterKeys {
             it in layersToCheck
-        } .values.flatMap{
+        }.values.flatMap{
             it.objects
         }.mapNotNull {
             it as? Drawable
-        } .forEach {
+        }.forEach {
             it.draw(shader)
         }
     }
