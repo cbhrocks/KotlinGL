@@ -162,9 +162,10 @@ fun main() {
         colliders = mutableListOf(
             BoxCollider(
                 blockyChar.sharedMatrix,
-                Vector2f(0.5f, 1f),
+                Vector2f(0.75f, 1.5f),
                 CollisionLayers.PLAYER,
-                CollisionLayers.ENEMY or CollisionLayers.PROJECTILE or CollisionLayers.ENVIRONMENT
+                CollisionLayers.ENEMY or CollisionLayers.PROJECTILE or CollisionLayers.ENVIRONMENT,
+                Vector2f(0.0f, 1.5f)
             )
         )
     )

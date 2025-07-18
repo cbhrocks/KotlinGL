@@ -2,12 +2,23 @@ package org.kotlingl.Collider
 
 import org.joml.Vector2f
 import org.joml.Vector3f
+import org.joml.plus
 import org.kotlingl.math.TrackedMatrix
 
-abstract class Collider(val transform: TrackedMatrix, val layer: Int, val mask: Int) {
+abstract class Collider(
+    val transform: TrackedMatrix,
+    val layer: Int,
+    val mask: Int,
+    val offset: Vector2f = Vector2f(0.0f)
+) {
     abstract val shape: ColliderShape
+    val onCollisionCallbacks = mutableListOf<(other: Collider) -> Unit>()
 
-    fun overlaps(other: Collider): Boolean {
+    fun triggerCollisionCallbacks(other: Collider) {
+        onCollisionCallbacks.forEach { it(other) }
+    }
+
+    fun collidesWith(other: Collider): Boolean {
         return Intersector.intersects(this.shape, other.shape)
     }
 
@@ -20,11 +31,13 @@ class BoxCollider(
     transform: TrackedMatrix,
     val halfSize: Vector2f,
     layer: Int,
-    mask: Int
+    mask: Int,
+    offset: Vector2f = Vector2f(0.0f)
 ) : Collider(
     transform,
     layer,
-    mask
+    mask,
+    offset
 ) {
     override var shape: OBB2D = extractOBB2D()
 
@@ -35,7 +48,7 @@ class BoxCollider(
     private fun extractOBB2D(): OBB2D {
         val m = transform.getRef()
 
-        val center = Vector2f(m.m30(), m.m31())
+        val center = this.offset + Vector2f(m.m30(), m.m31())
         val xAxis = Vector2f(m.m00(), m.m01()).normalize()
         val yAxis = Vector2f(m.m10(), m.m11()).normalize()
 
