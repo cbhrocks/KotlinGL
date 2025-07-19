@@ -40,7 +40,7 @@ class Sphere(
         return Vector2f(u, v)
     }
 
-    override fun intersects(ray: Ray): Intersection? {
+    override fun intersects(ray: Ray, material: Material?): Intersection? {
         val oc = ray.origin - this.center
         val a = ray.direction.dot(ray.direction)
         val b = 2f * oc.dot(ray.direction)

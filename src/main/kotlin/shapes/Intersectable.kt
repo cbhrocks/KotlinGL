@@ -3,6 +3,7 @@ package org.kotlingl.shapes
 import ShaderProgram
 import org.joml.Vector3f
 import org.kotlingl.entity.Intersection
+import org.kotlingl.entity.Material
 
 abstract class GLResource {
     var glInitialized: Boolean = false
@@ -23,7 +24,7 @@ interface Drawable {
 
 interface Intersectable {
     //val aabb: AABB
-    fun intersects(ray: Ray): Intersection?
+    fun intersects(ray: Ray, material: Material? = null): Intersection?
 }
 
 interface Updatable {

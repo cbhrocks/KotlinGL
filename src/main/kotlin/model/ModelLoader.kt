@@ -32,6 +32,8 @@ data class ModelCacheData (
     val name: String,
     val nodeToMeshIndices: MutableMap<Int, List<Int>>,
     val meshes: List<Mesh>,
+    val materials: List<Material>,
+    val meshIndexToMaterialIndex: MutableMap<Int, Int>,
     val modelTransform: Matrix4f,
     var skeletonHash: Int
 )
@@ -65,9 +67,11 @@ class ModelLoader {
         return Model(
             modelData.name,
             modelData.meshes,
+            modelData.materials,
             skeletonCache.getValue(modelData.skeletonHash),
             modelData.nodeToMeshIndices,
-            Matrix4f(modelData.modelTransform)
+            modelData.meshIndexToMaterialIndex,
+            Matrix4f(modelData.modelTransform),
         )
     }
 
@@ -122,8 +126,10 @@ class ModelLoader {
         val aiMeshes = List(scene.mNumMeshes()) { i ->
             AIMesh.create(scene.mMeshes()!![i])
         }
-        val meshes = aiMeshes.map {
-            importMesh(it, materials[it.mMaterialIndex()])
+        val meshIndexToMaterialIndex = mutableMapOf<Int, Int>()
+        val meshes = aiMeshes.mapIndexed { i, it ->
+            meshIndexToMaterialIndex.put(i, it.mMaterialIndex())
+            importMesh(it)
         }
 
         val boneNames = aiMeshes.map { aiMesh ->
@@ -161,6 +167,8 @@ class ModelLoader {
             rootNode.mName().dataString(),
             nodeData.nodeToMeshIndices,
             meshes,
+            materials,
+            meshIndexToMaterialIndex,
             Matrix4f(),
             skeletonHash
         )
@@ -313,7 +321,7 @@ class ModelLoader {
         )
     }
 
-    fun importMesh(aiMesh: AIMesh, material: Material): Mesh {
+    fun importMesh(aiMesh: AIMesh): Mesh {
         val vertices = List(aiMesh.mNumVertices()) { i ->
             val aiPos = aiMesh.mVertices()[i]
             val position = Vector3f(aiPos.x(), aiPos.y(), aiPos.z())
@@ -332,7 +340,7 @@ class ModelLoader {
             } else {
                 uv = Vector2f(0f, 0f)
             }
-            Vertex( position, normal, uv )
+            Vertex( position, normal, uv)
         }
 
         val indices = mutableListOf<Int>()
@@ -357,7 +365,7 @@ class ModelLoader {
             Bone(boneName, offsetMatrix, weights)
         }
 
-        return Mesh(vertices, indices, material, meshBones, aiMesh.mName().dataString())
+        return Mesh(vertices, indices, meshBones, aiMesh.mName().dataString())
     }
 
     fun walkNodes(

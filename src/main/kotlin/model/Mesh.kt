@@ -1,6 +1,7 @@
 package org.kotlingl.model
 
 import ShaderProgram
+import org.joml.Vector2f
 import org.joml.Vector2fc
 import org.joml.Vector3f
 import org.kotlingl.entity.Intersection
@@ -31,19 +32,31 @@ import org.lwjgl.opengl.GL30.glDeleteVertexArrays
 import org.lwjgl.opengl.GL30.glGenVertexArrays
 import org.lwjgl.system.MemoryUtil
 
+/**
+ * vertex is a data struct storing all the relevant data per index of a model.
+ * @property position the 3D coordinate of the index
+ * @property normal the normal of the coordinate. used to calculate how light reflects off of the surface
+ * @property uv the uv coordinates used to sample a texture, These could be changed, useful for per
+ *  frame animations using a sprite sheet
+ * @property normalizedUV the original uv coordinates used to sample a texture. stored as reference if uv needs to be
+ * reset
+ * @property boneIndices the index of the bone matrix used for mesh deformation
+ * @property boneWeights how much of an impact bone deformation of the corresponding bone index has on this mesh.
+ */
 data class Vertex (
     val position: Vector3f,
     val normal: Vector3f,
-    val uv: Vector2fc,
+    var uv: Vector2f,
     // Max 4 bones per vertex
     val boneIndices: List<Int> = listOf(),
     val boneWeights: List<Float> = listOf()
-)
+) {
+    val normalizedUV: Vector2fc = uv
+}
 
 class Mesh(
     val vertices: List<Vertex>,
     val indices: List<Int>,
-    val material: Material,
     val bones: List<Bone> = listOf(),
     val name: String? = null
 ): GLResource(), Bounded, Drawable {
@@ -57,7 +70,6 @@ class Mesh(
                 vertices[i0],
                 vertices[i1],
                 vertices[i2],
-                material
             )
         }
     }
@@ -71,7 +83,6 @@ class Mesh(
 
     override fun initGL() {
         require(isGLReady()) { "GL has not been initialized" }
-        material.initGL()
 
         vaoId = glGenVertexArrays()
         vboId = glGenBuffers()
@@ -146,16 +157,16 @@ class Mesh(
     }
 
     override fun draw(shader: ShaderProgram) {
-        material.bind(shader)
         glBindVertexArray(vaoId)
         glDrawElements(GL_TRIANGLES, indices.size, GL_UNSIGNED_INT, 0)
         checkGLError("mesh glDrawElements")
         glBindVertexArray(0)
     }
 
-    override fun intersects(ray: Ray): Intersection? {
+    override fun intersects(ray: Ray, material: Material?): Intersection? {
+        require(material !== null) {"Mesh intersection requires a material to be passed"}
         //return this.bvhNode.intersects(ray)
-        return this.triangles.mapNotNull { it.intersects(ray) }.minByOrNull { it.t }
+        return this.triangles.mapNotNull { it.intersects(ray, material) }.minByOrNull { it.t }
     }
 
     override fun computeAABB(): AABB {
@@ -172,16 +183,20 @@ class Mesh(
         return AABB(min, max)
     }
 
-    //override fun getBVHNode(): BVHNode {
-    //    return this.bvhNode
-    //}
-
     override fun centroid(): Vector3f {
         val center = Vector3f()
         for (tri in triangles) {
             center.add(tri.centroid())
         }
         return center.div(triangles.size.toFloat())
+    }
+
+    fun clampUvs(min: Vector2f, max: Vector2f) {
+        this.vertices.map {
+            it.apply {
+                uv = Vector2f(normalizedUV.x().coerceIn(min.x, max.x), normalizedUV.y().coerceIn(min.y, max.y))
+            }
+        }
     }
 
     companion object {

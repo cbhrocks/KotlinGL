@@ -11,6 +11,7 @@ import org.kotlingl.shapes.GLResource
 import org.kotlingl.shapes.Intersectable
 import org.kotlingl.shapes.Ray
 import org.kotlingl.shapes.Updatable
+import java.util.SortedMap
 
 class Layer(
     val name: String,
@@ -49,7 +50,7 @@ data class Scene(
     var shader: Shader,
     var cameraManager: CameraManager,
     var lights: MutableList<Light> = mutableListOf(),
-    var layers: MutableMap<String, Layer> = mutableMapOf(),
+    var layers: SortedMap<String, Layer> = sortedMapOf(),
     var colliders: MutableList<Collider> = mutableListOf()
 ): GLResource() {
 

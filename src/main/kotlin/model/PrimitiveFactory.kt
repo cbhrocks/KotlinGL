@@ -5,7 +5,35 @@ import org.joml.Quaternionf
 import org.joml.Vector2f
 import org.joml.Vector3f
 import org.kotlingl.entity.Material
-import org.kotlingl.math.TrackedMatrix
+
+val vertices = mutableListOf(
+    // bottom left
+    Vertex(
+        Vector3f(-0.5f, -0.5f, 0f),
+        Vector3f(0f, 0f, 1f),
+        Vector2f(0f, 0f)
+    ),
+    // bottom right
+    Vertex(
+        Vector3f(0.5f, -0.5f, 0f),
+        Vector3f(0f, 0f, 1f),
+        Vector2f(1f, 0f)
+    ),
+    // top left
+    Vertex(
+        Vector3f(-0.5f, 0.5f, 0f),
+        Vector3f(0f, 0f, 1f),
+        Vector2f(0f, 1f)
+    ),
+    // top right
+    Vertex(
+        Vector3f(0.5f, 0.5f, 0f),
+        Vector3f(0f, 0f, 1f),
+        Vector2f(1f, 1f)
+    )
+)
+val indices = mutableListOf(0, 1, 2, 3, 2, 1)
+
 
 object PrimitiveFactory {
     fun createSphere(
@@ -57,10 +85,11 @@ object PrimitiveFactory {
             }
         }
 
-        val mesh = Mesh(vertices, indices, material)
+        val mesh = Mesh(vertices, indices)
         return Model(
             name,
             listOf(mesh),
+            listOf(material),
             Skeleton(
                 "unnamedSkeleton",
                 0,
@@ -73,7 +102,35 @@ object PrimitiveFactory {
                     )
                 ),
             ),
-            mutableMapOf(0 to listOf(0))
+            mutableMapOf(0 to listOf(0)),
+            mutableMapOf(0 to 0),
+        )
+    }
+
+    fun createQuad(
+        name: String,
+        material: Material = Material()
+    ): Model {
+        val quadMesh = Mesh(vertices, indices)
+
+        return Model(
+            name,
+            listOf(quadMesh),
+            listOf(material),
+            Skeleton(
+                "unnamedSkeleton",
+                0,
+                mapOf(
+                    0 to SkeletonNode(
+                        0,
+                        "root",
+                        Matrix4f(),
+                        isBone = false
+                    )
+                ),
+            ),
+            mutableMapOf(0 to listOf(0)),
+            mutableMapOf(0 to 0),
         )
     }
 }

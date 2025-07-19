@@ -1,6 +1,7 @@
 package org.kotlingl.model
 
 import org.kotlingl.entity.Intersection
+import org.kotlingl.entity.Material
 import org.kotlingl.math.TrackedMatrix
 import org.kotlingl.shapes.AABB
 import org.kotlingl.shapes.AABB.Companion.surroundingBox
@@ -76,7 +77,8 @@ class BVHTree(val root: BVHNode) {
                 val mesh = model.meshes[meshIndex]
                 val localAABB = mesh.computeAABB()
                 //val worldAABB = model.modelM.let { localAABB.transformedBy(it.getRef()) }
-                childNodes.add(BVHLeaf(localAABB, mesh))
+                val material = model.materials.get(model.meshIndexToMaterialIndex.getValue(meshIndex))
+                childNodes.add(BVHLeaf(localAABB, mesh, material))
             }
 
             // Recursively build child BVH groups
@@ -118,7 +120,8 @@ sealed class BVHNode {
 data class BVHLeaf(
     override var aabb: AABB,
     val geometry: Bounded,
-    val modelMatrix: TrackedMatrix? = null
+    val material: Material,
+    val modelMatrix: TrackedMatrix? = null,
 ) : BVHNode() {
     override fun recomputeAABBIfNeeded(): AABB {
         if (isDirty()) {

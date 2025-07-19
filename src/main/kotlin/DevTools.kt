@@ -9,12 +9,15 @@ import imgui.gl3.ImGuiImplGl3
 import imgui.glfw.ImGuiImplGlfw
 import imgui.type.ImBoolean
 import imgui.type.ImFloat
+import imgui.type.ImInt
+import imgui.type.ImString
 import org.joml.Quaternionf
 import org.joml.Vector3f
 import org.kotlingl.Input.InputContext
 import org.kotlingl.Input.InputEvent
 import org.kotlingl.math.toFloatArray
 import org.kotlingl.model.Model
+import org.kotlingl.model.PrimitiveFactory
 import org.kotlingl.model.SkeletonNode
 import org.kotlingl.utils.checkGLError
 import org.lwjgl.glfw.GLFW.GLFW_KEY_A
@@ -40,10 +43,12 @@ object DevTools {
     lateinit var scene: Scene
     lateinit var frameTimer: FrameTimer
 
+    private val activeLayer = ImInt(0)
     private val imguiGlfw = ImGuiImplGlfw()
     private val imguiGl3 = ImGuiImplGl3()
     private val settingsWindowOpen = ImBoolean(false)
     private val sceneWindowOpen = ImBoolean(false)
+    private val newSphereWindowOpen = ImBoolean(false)
     private val statusBar = FPSWindow(ImBoolean(true))
     private val modelWindows = mutableMapOf<String, ModelWindow>()
     private val movementEnabled = ImBoolean(false)
@@ -126,6 +131,7 @@ object DevTools {
         createMainMenuBar()
         createSettingsWindow()
         createSceneManagerWindow()
+        createNewSphereWindow()
         createModelWindows()
         createStatusBar()
     }
@@ -187,7 +193,22 @@ object DevTools {
         ImGui.setNextWindowPos(ImVec2(mainViewport.workPosX + 650, mainViewport.workPosY + 20), ImGuiCond.FirstUseEver);
         ImGui.setNextWindowSize(ImVec2(550f, 680f), ImGuiCond.FirstUseEver);
 
-        if (ImGui.begin("Scene Objects", sceneWindowOpen)) {
+        if (ImGui.begin("Scene Objects", sceneWindowOpen, ImGuiWindowFlags.MenuBar)) {
+            if (ImGui.beginMenuBar()) {
+                if (ImGui.beginMenu("Insert")) {
+                    if (ImGui.beginMenu("Primitive")) {
+                        if (ImGui.menuItem("Sphere")) {
+
+                        }
+                        if (ImGui.menuItem("Quad")) {
+                        }
+                        ImGui.endMenu()
+                    }
+                    ImGui.endMenu()
+                }
+                ImGui.endMenuBar()
+            }
+
             scene.layers.forEach { layer ->
                 if (ImGui.collapsingHeader("Layer ${layer.key}")) {
                     layer.value.objects.filter {
@@ -198,7 +219,7 @@ object DevTools {
                         ImGui.sameLine()
                         val modelWindow = modelWindows.getValue(model.name)
                         val viewButtonLabel = if (modelWindow.open.get()) "Hide" else "View"
-                        if (ImGui.button(viewButtonLabel)) {
+                        if (ImGui.button(viewButtonLabel + "###_${model.name}")) {
                             modelWindow.open.set(!modelWindow.open.get())
                         }
                     }
@@ -206,6 +227,16 @@ object DevTools {
             }
         }
         ImGui.end()
+    }
+
+    fun createNewSphereWindow() {
+        if (!newSphereWindowOpen.get()) {
+            return
+        }
+
+        if (ImGui.begin("New Sphere", newSphereWindowOpen)) {
+
+        }
     }
 
     fun createModelWindows() {
@@ -283,8 +314,9 @@ object DevTools {
             val meshIndices = model.nodeIdToMeshIndices[currentNode.id]
             meshIndices?.forEach {
                 val mesh = model.meshes[it]
+                val material = model.getMeshMaterial(it)
                 if (ImGui.treeNodeEx("Mesh: ${mesh.name}")) {
-                    ImGui.text("Material: ${mesh.material.name}")
+                    ImGui.text("Material: ${material.name}")
                     ImGui.treePop()
                 }
             }

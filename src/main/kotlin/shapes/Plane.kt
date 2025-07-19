@@ -31,7 +31,7 @@ class Plane(
         return Vector2f(scaledU, scaledV)
     }
 
-    override fun intersects(ray: Ray): Intersection? {
+    override fun intersects(ray: Ray, material: Material?): Intersection? {
         val denom = ray.direction.dot(this.normal)
 
         // Ray is parallel to the plane

@@ -12,13 +12,16 @@ class Triangle (
     val v0: Vertex,
     val v1: Vertex,
     val v2: Vertex,
-    val material: Material,
+    val material: Material? = null,
 ) : Bounded {
 
     private var faceNormal: Vector3f = (v1.position - v0.position).cross(v2.position - v0.position).normalize()
 
     // Möller–Trumbore Triangle-Ray Intersection
-    override fun intersects(ray: Ray): Intersection? {
+    override fun intersects(ray: Ray, material: Material?): Intersection? {
+        val localMaterial = this.material ?: material
+        require(localMaterial !== null) {"a triangle must either have a material, or have one passed."}
+
         val edge1 = v1.position - v0.position
         val edge2 = v2.position - v0.position
         val h = ray.direction.cross(edge2, Vector3f())
@@ -55,7 +58,7 @@ class Triangle (
                 ray.origin + ray.direction * t,
                 faceNormal,
                 t,
-                material,
+                localMaterial,
                 faceNormal.dot(ray.origin + ray.direction) > 0f,
                 uv
             )

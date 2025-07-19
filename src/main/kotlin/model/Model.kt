@@ -3,10 +3,12 @@ package org.kotlingl.model
 import ShaderProgram
 import org.joml.Matrix4f
 import org.joml.Quaternionf
+import org.joml.Vector2f
 import org.kotlingl.entity.Intersection
 import org.kotlingl.shapes.Ray
 
 import org.joml.Vector3f
+import org.kotlingl.entity.Material
 import org.kotlingl.math.TrackedMatrix
 import org.kotlingl.shapes.Drawable
 import org.kotlingl.shapes.GLResource
@@ -26,8 +28,10 @@ import org.kotlingl.utils.isGLReady
 class Model(
     val name: String,
     val meshes: List<Mesh>,
+    val materials: List<Material>,
     val skeleton: Skeleton,
     val nodeIdToMeshIndices: MutableMap<Int, List<Int>>,
+    val meshIndexToMaterialIndex: MutableMap<Int, Int>,
     modelMatrix: Matrix4f = Matrix4f()
 ): Intersectable, Updatable, GLResource(), Drawable {
     var modelMatrix: Matrix4f = modelMatrix
@@ -50,6 +54,7 @@ class Model(
     override fun initGL() {
         require(isGLReady()) { "GL has not been initialized" }
 
+        materials.forEach { it.initGL() }
         meshes.forEach { it.initGL() }
         markInitialized()
     }
@@ -72,6 +77,7 @@ class Model(
             nodeTransforms.finalTransform ?: nodeTransforms.globalTransform
         )
         nodeIdToMeshIndices.getValue(nodeId).forEach {
+            materials.get(meshIndexToMaterialIndex.getValue(it)).bind(shader)
             meshes[it].draw(shader)
         }
         skeleton.nodeMap.getValue(nodeId).childIds.forEach {
@@ -106,10 +112,18 @@ class Model(
         bvhTree.refit()
     }
 
-    override fun intersects(ray: Ray): Intersection? {
+    override fun intersects(ray: Ray, material: Material?): Intersection? {
         val localRay = ray.transformedBy(modelMInverse)
         val localHit = this.bvhTree.intersects(localRay)
         return localHit?.transformedBy(sharedMatrix.getRef())
+    }
+
+    fun clampMeshUvs(min: Vector2f, max: Vector2f){
+        meshes.forEach { it.clampUvs(min, max) }
+    }
+
+    fun getMeshMaterial(index: Int): Material {
+        return materials[meshIndexToMaterialIndex.getValue(index)]
     }
 }
 

@@ -117,6 +117,9 @@ fun main() {
     val sphere = PrimitiveFactory.createSphere(
         "sphere"
     )
+    val quad = PrimitiveFactory.createQuad(
+        "quad"
+    )
 
     val scene = Scene(
         shader = Shader.Builder()
@@ -148,7 +151,7 @@ fun main() {
             //    0.7f
             //)
         ),
-        layers = mutableMapOf(
+        layers = sortedMapOf(
             "background" to Layer(
                 "background",
                 mutableListOf(
@@ -156,6 +159,7 @@ fun main() {
                     blockyChar,
                     //blockyChar2,
                     // sphere
+                    quad
                 )
             )
         ),
