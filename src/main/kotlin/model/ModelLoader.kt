@@ -4,10 +4,7 @@ import org.joml.Matrix4f
 import org.joml.Quaternionf
 import org.joml.Vector2f
 import org.joml.Vector3f
-import org.kotlingl.entity.Material
-import org.kotlingl.entity.Texture
-import org.kotlingl.entity.WrapMode
-import org.kotlingl.entity.toColor
+import org.kotlingl.entity.*
 import org.kotlingl.math.EPSILON
 import org.kotlingl.math.toJoml
 import org.lwjgl.BufferUtils
@@ -38,13 +35,19 @@ data class ModelCacheData (
     var skeletonHash: Int
 )
 
+data class Model2DCacheData (
+    val name: String,
+    val material: Material,
+    val animations: List<Animation2D>,
+)
+
 data class NodeTraversalData (
     val nodeMap: MutableMap<Int, SkeletonNode>,
     val nameToNodeId: MutableMap<String, MutableList<Int>>,
     val nodeToMeshIndices: MutableMap<Int, List<Int>>,
 )
 
-class ModelLoader {
+object ModelLoader {
     // the user defined name pointing to the file path used to import the model
     val modelLookup: MutableMap<String, String> = mutableMapOf()
     // the file name pointing to the ModelCacheData used for reconstruction.
@@ -52,6 +55,7 @@ class ModelLoader {
     val skeletonCache: MutableMap<Int, Skeleton> = mutableMapOf()
     // textures loaded from files
     val textureCache = mutableMapOf<String, Texture>()
+    val modelCache2D = mutableMapOf<Int, Model2DCacheData>()
 
 
     private fun normalizePath(path: String): String =
@@ -79,6 +83,12 @@ class ModelLoader {
         if (modelCache.containsKey(filePath)) throw IllegalArgumentException("model already loaded!")
         if (modelLookup.containsKey(name)) throw IllegalArgumentException("model already exists with that name!")
         importModel(filePath)
+        modelLookup[name] = filePath
+    }
+
+    fun loadModelFromSpriteSheet(filePath: String, name: String) {
+        if (modelLookup.containsKey(name)) throw IllegalArgumentException("model already exists with that name!")
+        importModel2D(filePath)
         modelLookup[name] = filePath
     }
 
@@ -511,6 +521,19 @@ class ModelLoader {
             animation.mDuration().toFloat(),
             animation.mTicksPerSecond().toFloat(),
             nodeAnimations
+        )
+    }
+
+    fun importModel2D(filePath: String) {
+        // create Material for model2D
+        val texture = textureCache.getOrPut(filePath) {
+                // External file
+            val texturePath = filePath.replace("\\", "/")
+            importTextureFromResource(texturePath)
+        }
+        val material = Material(
+            texture,
+            baseColor = ColorRGB(0, 0, 0, 0)
         )
     }
 }

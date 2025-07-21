@@ -93,10 +93,9 @@ object GameInputContext : InputContext {
 }
 
 fun main() {
-    val ml = ModelLoader()
     //ml.loadModel("/models/spider/spider.obj", "spider")
     //ml.loadModel("/models/box/box.obj", "box")
-    ml.loadModel("/models/blocky-characters/FBX format/character-a.fbx", "blocky-character-a")
+    ModelLoader.loadModel("/models/blocky-characters/FBX format/character-a.fbx", "blocky-character-a")
     // val spider = ml.createModel("spider")
     // spider.transform(
     //     Vector3f(2f, 0f, 0f),
@@ -104,7 +103,7 @@ fun main() {
     //     scale = Vector3f(.02f, .02f, .02f)
     // )
     //val box = ml.createModel("box")
-    val blockyChar = ml.createModel("blocky-character-a")
+    val blockyChar = ModelLoader.createModel("blocky-character-a")
     blockyChar.transform(
         rotation = Quaternionf().rotateY(PI.toFloat())//.rotateX(PI.toFloat()/2f),
     )
@@ -152,6 +151,10 @@ fun main() {
             //)
         ),
         layers = sortedMapOf(
+            "ui" to Layer(
+                "ui",
+                mutableListOf()
+            ),
             "background" to Layer(
                 "background",
                 mutableListOf(
@@ -159,9 +162,17 @@ fun main() {
                     blockyChar,
                     //blockyChar2,
                     // sphere
-                    quad
+                    // quad
                 )
-            )
+            ),
+            "world" to Layer(
+                "world",
+                mutableListOf()
+            ),
+            "foreground" to Layer(
+                "foreground",
+                mutableListOf()
+            ),
         ),
         colliders = mutableListOf(
             BoxCollider(

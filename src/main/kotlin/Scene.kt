@@ -95,4 +95,8 @@ data class Scene(
             it.draw(shader)
         }
     }
+
+    fun getLayerNames() = layers.keys.toList()
+
+    fun getAllObjects() = layers.values.flatMap { it.objects }
 }

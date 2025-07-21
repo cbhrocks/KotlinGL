@@ -1,7 +1,9 @@
 package org.kotlingl
 
+import imgui.ImColor
 import imgui.ImGui
 import imgui.ImVec2
+import imgui.flag.ImGuiCol
 import imgui.flag.ImGuiCond
 import imgui.flag.ImGuiTreeNodeFlags
 import imgui.flag.ImGuiWindowFlags
@@ -38,6 +40,11 @@ data class FPSWindow(
     var open: ImBoolean,
     var showFPS: ImBoolean = ImBoolean(true)
 )
+
+object DevObjects {
+    val quads = mutableMapOf<String, Model>()
+    val spheres = mutableMapOf<String, Model>()
+}
 
 object DevTools {
     lateinit var scene: Scene
@@ -194,22 +201,12 @@ object DevTools {
         ImGui.setNextWindowSize(ImVec2(550f, 680f), ImGuiCond.FirstUseEver);
 
         if (ImGui.begin("Scene Objects", sceneWindowOpen, ImGuiWindowFlags.MenuBar)) {
-            if (ImGui.beginMenuBar()) {
-                if (ImGui.beginMenu("Insert")) {
-                    if (ImGui.beginMenu("Primitive")) {
-                        if (ImGui.menuItem("Sphere")) {
 
-                        }
-                        if (ImGui.menuItem("Quad")) {
-                        }
-                        ImGui.endMenu()
-                    }
-                    ImGui.endMenu()
-                }
-                ImGui.endMenuBar()
-            }
+            ImGui.combo("Active Layer", activeLayer, scene.layers.keys.toTypedArray())
 
             scene.layers.forEach { layer ->
+                if (scene.getLayerNames()[activeLayer.get()]!! == layer.key)
+                    ImGui.pushStyleColor(ImGuiCol.Header, 0f, 0.6f, 0f, 1f)
                 if (ImGui.collapsingHeader("Layer ${layer.key}")) {
                     layer.value.objects.filter {
                         it is Model
@@ -224,6 +221,24 @@ object DevTools {
                         }
                     }
                 }
+                if (scene.layers.keys.toTypedArray()[activeLayer.get()]!! == layer.key)
+                    ImGui.popStyleColor()
+            }
+
+            if (ImGui.beginMenuBar()) {
+                if (ImGui.beginMenu("Insert")) {
+                    if (ImGui.beginMenu("Primitive")) {
+                        if (ImGui.menuItem("Sphere")) {
+                            createNewSphere()
+                        }
+                        if (ImGui.menuItem("Quad")) {
+                            createNewQuad()
+                        }
+                        ImGui.endMenu()
+                    }
+                    ImGui.endMenu()
+                }
+                ImGui.endMenuBar()
             }
         }
         ImGui.end()
@@ -370,5 +385,19 @@ object DevTools {
         imguiGl3.shutdown()
         imguiGlfw.shutdown()
         ImGui.destroyContext()
+    }
+
+    fun createNewQuad() {
+        val name = "Quad_" + DevObjects.quads.count() + 1
+        val newQuad = PrimitiveFactory.createQuad(name).apply {initGL()}
+        DevObjects.quads[name] = newQuad
+        scene.layers.getValue(scene.getLayerNames()[activeLayer.get()]).objects.addLast(newQuad)
+    }
+
+    fun createNewSphere() {
+        val name = "Sphere_" + DevObjects.spheres.count() + 1
+        val newSphere = PrimitiveFactory.createSphere(name).apply {initGL()}
+        DevObjects.spheres[name] = newSphere
+        scene.layers.getValue(scene.getLayerNames()[activeLayer.get()]).objects.addLast(newSphere)
     }
 }
