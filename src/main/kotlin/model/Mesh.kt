@@ -38,8 +38,6 @@ import org.lwjgl.system.MemoryUtil
  * @property normal the normal of the coordinate. used to calculate how light reflects off of the surface
  * @property uv the uv coordinates used to sample a texture, These could be changed, useful for per
  *  frame animations using a sprite sheet
- * @property normalizedUV the original uv coordinates used to sample a texture. stored as reference if uv needs to be
- * reset
  * @property boneIndices the index of the bone matrix used for mesh deformation
  * @property boneWeights how much of an impact bone deformation of the corresponding bone index has on this mesh.
  */
@@ -50,9 +48,7 @@ data class Vertex (
     // Max 4 bones per vertex
     val boneIndices: List<Int> = listOf(),
     val boneWeights: List<Float> = listOf()
-) {
-    val normalizedUV: Vector2fc = uv
-}
+)
 
 class Mesh(
     val vertices: List<Vertex>,
@@ -95,7 +91,7 @@ class Mesh(
         for (v in vertices) {
             vertexData.put(v.position.x).put(v.position.y).put(v.position.z)
             vertexData.put(v.normal.x).put(v.normal.y).put(v.normal.z)
-            vertexData.put(v.uv.x()).put(v.uv.y())
+            vertexData.put(v.uv.x).put(v.uv.y)
 
             // Pad bone indices and weights to 4
             val paddedIndices = v.boneIndices + List(4 - v.boneIndices.size) { 0 }
@@ -189,14 +185,6 @@ class Mesh(
             center.add(tri.centroid())
         }
         return center.div(triangles.size.toFloat())
-    }
-
-    fun clampUvs(min: Vector2f, max: Vector2f) {
-        this.vertices.map {
-            it.apply {
-                uv = Vector2f(normalizedUV.x().coerceIn(min.x, max.x), normalizedUV.y().coerceIn(min.y, max.y))
-            }
-        }
     }
 
     companion object {

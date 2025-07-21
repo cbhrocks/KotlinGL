@@ -2,6 +2,7 @@ package org.kotlingl.model
 
 import org.joml.Quaternionf
 import org.joml.Vector2f
+import org.joml.Vector2i
 import org.joml.Vector3f
 
 data class Animation(
@@ -22,11 +23,14 @@ data class NodeAnimation(
 )
 
 data class SpriteBB (
+    val name: String,
     val min: Vector2f,
     val max: Vector2f,
+    val pixelMin: Vector2i? = null,
+    val pixelMax: Vector2i? = null,
 )
 
-data class Animation2D (
+data class TextureAnimation (
     val name: String,
     val duration: Float,
     val ticksPerSecond: Float,

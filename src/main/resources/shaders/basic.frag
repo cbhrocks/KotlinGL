@@ -23,15 +23,18 @@ uniform Material material;
 uniform vec3 uLightDir = normalize(vec3(-0.5, -1.0, -0.3));
 uniform vec3 uLightColor = vec3(1.0);
 
+uniform vec2 uUvMin = vec2(0.0);
+uniform vec2 uUvMax = vec2(1.0);
+
 void main() {
-    vec2 scaledUV = vTexCoord * material.uvScale;
+    vec2 clampedUv = mix(uUvMin, uUvMax, vTexCoord * material.uvScale);
 
     // Sample textures
-    vec3 diffuseColor = texture(material.diffuse, scaledUV).rgb;
-    vec3 specularColor = texture(material.specular, scaledUV).rgb;
+    vec3 diffuseColor = texture(material.diffuse, clampedUv).rgb;
+    vec3 specularColor = texture(material.specular, clampedUv).rgb;
 
     // Normal mapping
-    vec3 sampledNormal = texture(material.normalMap, scaledUV).rgb;
+    vec3 sampledNormal = texture(material.normalMap, clampedUv).rgb;
     sampledNormal = normalize(sampledNormal * 2.0 - 1.0); // Convert from [0,1] to [-1,1]
 
     // Lighting calculations

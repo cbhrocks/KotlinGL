@@ -111,7 +111,7 @@ object PrimitiveFactory {
         name: String,
         material: Material = Material()
     ): Model {
-        val quadMesh = Mesh(vertices, indices)
+        val quadMesh = Mesh(vertices, indices, name="quad")
 
         return Model(
             name,

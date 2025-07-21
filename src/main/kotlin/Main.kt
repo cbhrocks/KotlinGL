@@ -96,6 +96,7 @@ fun main() {
     //ml.loadModel("/models/spider/spider.obj", "spider")
     //ml.loadModel("/models/box/box.obj", "box")
     ModelLoader.loadModel("/models/blocky-characters/FBX format/character-a.fbx", "blocky-character-a")
+    ModelLoader.loadModelFromSpriteSheetAtlas("/sprites/kenney-platformer-pack/Spritesheets/spritesheet-characters-default.xml", "test-sprite")
     // val spider = ml.createModel("spider")
     // spider.transform(
     //     Vector3f(2f, 0f, 0f),
@@ -108,6 +109,8 @@ fun main() {
         rotation = Quaternionf().rotateY(PI.toFloat())//.rotateX(PI.toFloat()/2f),
     )
     blockyChar.skeletonAnimator.currentAnimation = blockyChar.skeleton.animations["walk"]
+    val testSprite = ModelLoader.createModel2D("test-sprite")
+    testSprite.textureAnimator.playAnimation("quad", "character_beige_walk")
     //val blockyChar2 = ml.createModel("blocky-character-a")
     //blockyChar2.transform(
     //    Vector3f(2f, 0f, 0f),
@@ -160,6 +163,7 @@ fun main() {
                 mutableListOf(
                     // spider,
                     blockyChar,
+                    testSprite
                     //blockyChar2,
                     // sphere
                     // quad

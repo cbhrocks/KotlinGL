@@ -50,6 +50,7 @@ class Model(
         BVHTree.buildForModel(this)
     }
     val skeletonAnimator: SkeletonAnimator = SkeletonAnimator(skeleton, sharedMatrix)
+    val textureAnimator = TextureAnimator()
 
     override fun initGL() {
         require(isGLReady()) { "GL has not been initialized" }
@@ -77,8 +78,17 @@ class Model(
             nodeTransforms.finalTransform ?: nodeTransforms.globalTransform
         )
         nodeIdToMeshIndices.getValue(nodeId).forEach {
+            val uvClamp = textureAnimator.getCurrentUvClamp(meshes[it].name)
+            uvClamp?.let {
+                shader.setUniform("uUvMin", it.min)
+                shader.setUniform("uUvMax", it.max)
+            }
             materials.get(meshIndexToMaterialIndex.getValue(it)).bind(shader)
             meshes[it].draw(shader)
+            uvClamp?.let {
+                shader.setUniform("uUvMin", Vector2f(0f, 0f))
+                shader.setUniform("uUvMax", Vector2f(1f, 1f))
+            }
         }
         skeleton.nodeMap.getValue(nodeId).childIds.forEach {
             drawMeshByNode(it, shader)
@@ -109,6 +119,7 @@ class Model(
 
     override fun update(timeDelta: Float) {
         skeletonAnimator.update(timeDelta)
+        textureAnimator.update(timeDelta)
         bvhTree.refit()
     }
 
@@ -116,10 +127,6 @@ class Model(
         val localRay = ray.transformedBy(modelMInverse)
         val localHit = this.bvhTree.intersects(localRay)
         return localHit?.transformedBy(sharedMatrix.getRef())
-    }
-
-    fun clampMeshUvs(min: Vector2f, max: Vector2f){
-        meshes.forEach { it.clampUvs(min, max) }
     }
 
     fun getMeshMaterial(index: Int): Material {
@@ -220,5 +227,54 @@ class SkeletonAnimator(val skeleton: Skeleton, val modelMatrix: TrackedMatrix) {
         currentNode.childIds.forEach {
             updateGlobalTransforms(it, currentTransforms.globalTransform)
         }
+    }
+}
+
+class TextureAnimator {
+    data class ActiveAnimation(
+        val animation: TextureAnimation,
+        var currentTime: Float
+    )
+
+    data class UVClamp(
+        val min: Vector2f,
+        val max: Vector2f
+    )
+
+    private val animations: MutableMap<String, TextureAnimation> = mutableMapOf()
+    private val activeAnimations: MutableMap<String, ActiveAnimation> = mutableMapOf()
+    private val uvClamp: MutableMap<String, UVClamp> = mutableMapOf()
+
+    fun addAnimation(meshName: String, animation: TextureAnimation) {
+        animations["$meshName:${animation.name}"] = animation
+    }
+
+    fun playAnimation(meshName: String, animationName: String) {
+        val anim = animations["$meshName:$animationName"] ?: return
+        activeAnimations[meshName] = ActiveAnimation(anim, 0f)
+    }
+
+    fun getCurrentUvClamp(meshName: String?): UVClamp? {
+        return uvClamp[meshName]
+    }
+
+    fun update(deltaTime: Float) {
+        for ((meshName, active) in activeAnimations) {
+            active.currentTime += deltaTime
+
+            val frame = getKeyframeForTime(active.animation, active.currentTime)
+
+            uvClamp[meshName] = UVClamp(frame.min, frame.max)
+        }
+    }
+
+    private fun getKeyframeForTime(animation: TextureAnimation, time: Float): SpriteBB {
+        val t = (time * animation.ticksPerSecond) % animation.duration
+        val frames = animation.keyframes
+
+        for (i in 0 until frames.lastIndex) {
+            if (t < frames[i + 1].time) return frames[i].value
+        }
+        return frames.last().value
     }
 }

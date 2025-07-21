@@ -3,15 +3,18 @@ package org.kotlingl.model
 import org.joml.Matrix4f
 import org.joml.Quaternionf
 import org.joml.Vector2f
+import org.joml.Vector2i
 import org.joml.Vector3f
 import org.kotlingl.entity.*
-import org.kotlingl.math.EPSILON
 import org.kotlingl.math.toJoml
+import org.kotlingl.utils.ResourceLoader
 import org.lwjgl.BufferUtils
 import org.lwjgl.assimp.*
 import org.lwjgl.assimp.Assimp.*
 import org.lwjgl.stb.STBImage.*
 import org.lwjgl.system.MemoryStack
+import org.w3c.dom.Document
+import org.w3c.dom.Element
 import java.nio.ByteBuffer
 import java.nio.channels.Channels
 import java.nio.file.Path
@@ -38,7 +41,7 @@ data class ModelCacheData (
 data class Model2DCacheData (
     val name: String,
     val material: Material,
-    val animations: List<Animation2D>,
+    val animations: List<TextureAnimation>,
 )
 
 data class NodeTraversalData (
@@ -55,7 +58,7 @@ object ModelLoader {
     val skeletonCache: MutableMap<Int, Skeleton> = mutableMapOf()
     // textures loaded from files
     val textureCache = mutableMapOf<String, Texture>()
-    val modelCache2D = mutableMapOf<Int, Model2DCacheData>()
+    val modelCache2D = mutableMapOf<String, Model2DCacheData>()
 
 
     private fun normalizePath(path: String): String =
@@ -79,15 +82,33 @@ object ModelLoader {
         )
     }
 
+    fun createModel2D(lookupName: String): Model {
+        val filePath = modelLookup[lookupName] ?: error("Model $lookupName hasn't been loaded.")
+        val model = buildModel2D(modelCache2D.getValue(filePath))
+        return model
+    }
+
+    fun buildModel2D(modelData: Model2DCacheData): Model {
+        return PrimitiveFactory.createQuad(
+            modelData.name,
+            modelData.material
+        ).apply{
+            modelData.animations.forEach {
+                textureAnimator.addAnimation("quad", it)
+            }
+        }
+    }
+
     fun loadModel(filePath: String, name: String) {
-        if (modelCache.containsKey(filePath)) throw IllegalArgumentException("model already loaded!")
         if (modelLookup.containsKey(name)) throw IllegalArgumentException("model already exists with that name!")
+        if (modelCache.containsKey(filePath)) throw IllegalArgumentException("model already loaded!")
         importModel(filePath)
         modelLookup[name] = filePath
     }
 
-    fun loadModelFromSpriteSheet(filePath: String, name: String) {
+    fun loadModelFromSpriteSheetAtlas(filePath: String, name: String) {
         if (modelLookup.containsKey(name)) throw IllegalArgumentException("model already exists with that name!")
+        if (modelCache2D.containsKey(filePath)) throw IllegalArgumentException("model already loaded!")
         importModel2D(filePath)
         modelLookup[name] = filePath
     }
@@ -196,9 +217,7 @@ object ModelLoader {
     }
 
     fun loadByteBufferFromResource(resourcePath: String): ByteBuffer {
-        val stream = object {}.javaClass
-            .getResourceAsStream(resourcePath)
-            ?: throw IllegalArgumentException("Resource not found: $resourcePath")
+        val stream = ResourceLoader.getResourceAsStream(resourcePath)
 
         stream.use {
             val channel = Channels.newChannel(it)
@@ -210,12 +229,12 @@ object ModelLoader {
         }
     }
 
-    fun importTextureFromResource(path: String): Texture {
+    fun importTextureFromResource(path: String, flip: Boolean = false): Texture {
         // Step 1: Load resource as ByteBuffer
         val imageBuffer = loadByteBufferFromResource(path)
 
         // Step 2: Decode image using STBImage
-        //stbi_set_flip_vertically_on_load(true)
+        stbi_set_flip_vertically_on_load(flip)
         MemoryStack.stackPush().use { stack ->
             val width = stack.mallocInt(1)
             val height = stack.mallocInt(1)
@@ -526,14 +545,71 @@ object ModelLoader {
 
     fun importModel2D(filePath: String) {
         // create Material for model2D
-        val texture = textureCache.getOrPut(filePath) {
-                // External file
-            val texturePath = filePath.replace("\\", "/")
-            importTextureFromResource(texturePath)
+        val doc = ResourceLoader.loadXmlDocument(filePath)
+        val texturePath = Paths.get(ResourceLoader.normalizePath(filePath)).parent.resolve(
+                doc.documentElement.getAttribute("imagePath")).toString()
+        val texture = textureCache.getOrPut(texturePath) {
+            importTextureFromResource(texturePath,)
         }
         val material = Material(
             texture,
             baseColor = ColorRGB(0, 0, 0, 0)
         )
+        val animations = importAnimationsFromAtlas(
+            doc,
+            texture
+        )
+        modelCache2D.set(filePath, Model2DCacheData(
+            filePath,
+            material,
+            animations,
+        ))
+    }
+
+    fun importAnimationsFromAtlas(
+        doc: Document,
+        texture: Texture,
+        ticksPerSecond: Float = 10f
+    ): List<TextureAnimation> {
+        doc.documentElement.normalize()
+
+        val spriteMap = mutableMapOf<String, MutableList<Pair<String, SpriteBB>>>()
+
+        val subTextures = doc.getElementsByTagName("SubTexture")
+        for (i in 0 until subTextures.length) {
+            val element = subTextures.item(i) as Element
+            val name = element.getAttribute("name")
+            val x = element.getAttribute("x").toInt()
+            val y = texture.height - element.getAttribute("y").toInt()
+            val width = element.getAttribute("width").toInt()
+            val height = element.getAttribute("height").toInt()
+
+            val bb = SpriteBB(
+                name = name,
+                min = Vector2f(x.toFloat() / texture.width, 1f - y.toFloat() / texture.height),
+                max = Vector2f((x + width).toFloat()/texture.width, 1f - (y + height).toFloat()/texture.height),
+                pixelMin = Vector2i(x, y),
+                pixelMax = Vector2i(x + width, y + height),
+            )
+
+            // Try to group based on animation name prefix
+            val animName = name.substringBeforeLast('_')
+            spriteMap.getOrPut(animName) { mutableListOf() }.add(name to bb)
+        }
+
+        // Convert groups into TextureAnimation
+        return spriteMap.map { (name, frameList) ->
+            val sortedFrames = frameList.sortedBy { it.first }
+            val keyframes = sortedFrames.mapIndexed { index, (_, bb) ->
+                val time = index / ticksPerSecond
+                Keyframe(time, bb)
+            }
+            TextureAnimation(
+                name = name,
+                duration = keyframes.lastOrNull()?.time ?: 0f,
+                ticksPerSecond = ticksPerSecond,
+                keyframes = keyframes
+            )
+        }
     }
 }
