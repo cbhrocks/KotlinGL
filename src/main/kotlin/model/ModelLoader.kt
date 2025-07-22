@@ -580,10 +580,10 @@ object ModelLoader {
             val element = subTextures.item(i) as Element
             val name = element.getAttribute("name")
             val x = element.getAttribute("x").toInt()
-            val y = texture.height - element.getAttribute("y").toInt()
+            // val y = texture.height - element.getAttribute("y").toInt()
             val width = element.getAttribute("width").toInt()
             val height = element.getAttribute("height").toInt()
-            // val y = texture.height - element.getAttribute("y").toInt() - height
+            val y = texture.height - element.getAttribute("y").toInt() - height
 
             val bb = SpriteBB(
                 name = name,
