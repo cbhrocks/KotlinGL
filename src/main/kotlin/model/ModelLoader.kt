@@ -549,7 +549,7 @@ object ModelLoader {
         val texturePath = Paths.get(ResourceLoader.normalizePath(filePath)).parent.resolve(
                 doc.documentElement.getAttribute("imagePath")).toString()
         val texture = textureCache.getOrPut(texturePath) {
-            importTextureFromResource(texturePath,)
+            importTextureFromResource(texturePath, true)
         }
         val material = Material(
             texture,
@@ -569,7 +569,7 @@ object ModelLoader {
     fun importAnimationsFromAtlas(
         doc: Document,
         texture: Texture,
-        ticksPerSecond: Float = 10f
+        ticksPerSecond: Float = 3f
     ): List<TextureAnimation> {
         doc.documentElement.normalize()
 
@@ -583,11 +583,14 @@ object ModelLoader {
             val y = texture.height - element.getAttribute("y").toInt()
             val width = element.getAttribute("width").toInt()
             val height = element.getAttribute("height").toInt()
+            // val y = texture.height - element.getAttribute("y").toInt() - height
 
             val bb = SpriteBB(
                 name = name,
-                min = Vector2f(x.toFloat() / texture.width, 1f - y.toFloat() / texture.height),
-                max = Vector2f((x + width).toFloat()/texture.width, 1f - (y + height).toFloat()/texture.height),
+                min = Vector2f(x.toFloat() / texture.width, y.toFloat() / texture.height),
+                max = Vector2f((x + width).toFloat()/texture.width, (y + height).toFloat()/texture.height),
+                //min = Vector2f(x.toFloat() / texture.width, (y + height).toFloat() / texture.height),
+                //max = Vector2f((x + width).toFloat()/texture.width, y.toFloat()/texture.height),
                 pixelMin = Vector2i(x, y),
                 pixelMax = Vector2i(x + width, y + height),
             )
@@ -600,10 +603,23 @@ object ModelLoader {
         // Convert groups into TextureAnimation
         return spriteMap.map { (name, frameList) ->
             val sortedFrames = frameList.sortedBy { it.first }
-            val keyframes = sortedFrames.mapIndexed { index, (_, bb) ->
+            var keyframes = sortedFrames.mapIndexed { index, (_, bb) ->
                 val time = index / ticksPerSecond
                 Keyframe(time, bb)
+            }.toMutableList()
+
+            // currently animations only switch frames when the time reaches the point of the keyframe. This can cause
+            // animations with only 2 frames to never play the second one. We get around this by adding the first frame
+            // onto the end
+            if (keyframes.size == 2) {
+                keyframes.addLast(
+                    Keyframe(
+                        keyframes[1].time * 2,
+                        keyframes[0].value
+                    )
+                )
             }
+
             TextureAnimation(
                 name = name,
                 duration = keyframes.lastOrNull()?.time ?: 0f,

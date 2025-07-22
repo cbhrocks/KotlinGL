@@ -110,7 +110,7 @@ fun main() {
     )
     blockyChar.skeletonAnimator.currentAnimation = blockyChar.skeleton.animations["walk"]
     val testSprite = ModelLoader.createModel2D("test-sprite")
-    testSprite.textureAnimator.playAnimation("quad", "character_beige_walk")
+    testSprite.textureAnimator.playAnimation("quad", "character_yellow_climb")
     //val blockyChar2 = ml.createModel("blocky-character-a")
     //blockyChar2.transform(
     //    Vector3f(2f, 0f, 0f),
