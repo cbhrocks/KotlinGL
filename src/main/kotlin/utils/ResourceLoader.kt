@@ -29,6 +29,5 @@ object ResourceLoader {
     fun loadImage(path: String): BufferedImage {
         return ImageIO.read(getResourceAsStream(path))
     }
-
     // Extend for loading JSON, audio, shaders, etc.
 }
