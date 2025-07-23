@@ -284,29 +284,57 @@ object DevTools {
             ImGui.dragFloat3("Rotation", modelData.rotationTransform)
             ImGui.dragFloat3("Scale", scaleArray)
 
-            ImGui.separatorText("Animations")
-            ImGui.dragFloat("AnimationSpeed", animationSpeedArray, 0.1f, -5.0f, 5.0f)
-            ImGui.beginChild("Animations", ImVec2(ImGui.getContentRegionAvailX(), 260f))
-            model.skeleton.animations.forEach {
-                ImGui.text(it.value.name)
-                val isPlaying = model.skeletonAnimator.currentAnimation == it.value
-                val playSize = ImGui.calcTextSizeX("Play") + ImGui.getFrameHeight()
-                val loopSize = ImGui.calcTextSizeX("Loop") + ImGui.getFrameHeight()
-                ImGui.sameLine(ImGui.getContentRegionMaxX() - playSize * 2)
-                if (ImGui.button(if (isPlaying) "Stop" else "Play" + "###play_${it.key}")) {
-                    model.skeletonAnimator.currentAnimation = if (isPlaying) null else it.value
-                }
-                ImGui.sameLine(ImGui.getContentRegionMaxX() - loopSize)
-                if (ImGui.checkbox("Loop###loop_${it.key}", it.value.isLoop)) {
-                    it.value.isLoop = !it.value.isLoop
+            if (ImGui.collapsingHeader("Animations")) {
+                if (ImGui.beginTabBar("AnimationTabs")) {
+                    if (ImGui.beginTabItem("Model")){
+                        ImGui.dragFloat("AnimationSpeed", animationSpeedArray, 0.1f, -5.0f, 5.0f)
+                        ImGui.beginChild("Animations", ImVec2(ImGui.getContentRegionAvailX(), 260f))
+                        model.skeleton.animations.forEach {
+                            ImGui.text(it.value.name)
+                            val isPlaying = model.skeletonAnimator.currentAnimation == it.value
+                            val playSize = ImGui.calcTextSizeX("Play") + ImGui.getFrameHeight()
+                            val loopSize = ImGui.calcTextSizeX("Loop") + ImGui.getFrameHeight()
+                            ImGui.sameLine(ImGui.getContentRegionMaxX() - playSize * 2)
+                            if (ImGui.button(if (isPlaying) "Stop" else "Play" + "###play_${it.key}")) {
+                                model.skeletonAnimator.currentAnimation = if (isPlaying) null else it.value
+                            }
+                            ImGui.sameLine(ImGui.getContentRegionMaxX() - loopSize)
+                            if (ImGui.checkbox("Loop###loop_${it.key}", it.value.isLoop)) {
+                                it.value.isLoop = !it.value.isLoop
+                            }
+                        }
+                        ImGui.endChild()
+                        ImGui.endTabItem()
+                    }
+                    if (ImGui.beginTabItem("Texture")) {
+                        ImGui.dragFloat("AnimationSpeed", animationSpeedArray, 0.1f, -5.0f, 5.0f)
+                        ImGui.beginChild("Animations", ImVec2(ImGui.getContentRegionAvailX(), 260f))
+                        model.textureAnimator.animations.forEach {
+                            ImGui.text(it.value.name)
+                            val isPlaying = model.textureAnimator.activeAnimations.containsKey(it.key)
+                            val playSize = ImGui.calcTextSizeX("Play") + ImGui.getFrameHeight()
+                            val loopSize = ImGui.calcTextSizeX("Loop") + ImGui.getFrameHeight()
+                            ImGui.sameLine(ImGui.getContentRegionMaxX() - playSize * 2)
+                            if (ImGui.button(if (isPlaying) "Stop" else "Play" + "###play_${it.key}")) {
+                                model.textureAnimator.playAnimation(it.key)
+                            }
+                            // ImGui.sameLine(ImGui.getContentRegionMaxX() - loopSize)
+                            // if (ImGui.checkbox("Loop###loop_${it.key}", it.value.isLoop)) {
+                            //     it.value.isLoop = !it.value.isLoop
+                            // }
+                        }
+                        ImGui.endChild()
+                        ImGui.endTabItem()
+                    }
+                    ImGui.endTabBar()
                 }
             }
-            ImGui.endChild()
 
-            ImGui.separatorText("Skeleton")
-            ImGui.beginChild("Nodes", ImVec2(ImGui.getContentRegionAvailX(), 260f))
-            createSkeletonNode(model, model.skeleton.nodeMap.getValue(model.skeleton.rootId))
-            ImGui.endChild()
+            if (ImGui.collapsingHeader("Skeleton")) {
+                ImGui.beginChild("Nodes", ImVec2(ImGui.getContentRegionAvailX(), 260f))
+                createSkeletonNode(model, model.skeleton.nodeMap.getValue(model.skeleton.rootId))
+                ImGui.endChild()
+            }
 
 
             // sync values

@@ -241,12 +241,17 @@ class TextureAnimator {
         val max: Vector2f
     )
 
-    private val animations: MutableMap<String, TextureAnimation> = mutableMapOf()
-    private val activeAnimations: MutableMap<String, ActiveAnimation> = mutableMapOf()
+    val animations: MutableMap<String, TextureAnimation> = mutableMapOf()
+    val activeAnimations: MutableMap<String, ActiveAnimation> = mutableMapOf()
     private val uvClamp: MutableMap<String, UVClamp> = mutableMapOf()
 
     fun addAnimation(meshName: String, animation: TextureAnimation) {
         animations["$meshName:${animation.name}"] = animation
+    }
+
+    fun playAnimation(animationsKey: String) {
+        val (meshName, animationName) = animationsKey.split(":").let {it[0] to it[1]}
+        playAnimation(meshName, animationName)
     }
 
     fun playAnimation(meshName: String, animationName: String) {
