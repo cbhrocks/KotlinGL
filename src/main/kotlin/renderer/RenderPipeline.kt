@@ -1,7 +1,6 @@
 package org.kotlingl.renderer
 
 import org.kotlingl.CameraManager
-import org.kotlingl.DevTools
 import org.kotlingl.Scene
 
 class RenderPipeline(

@@ -1,7 +1,6 @@
 package org.kotlingl.renderer
 
 import org.kotlingl.Camera
-import org.kotlingl.DevTools
 import org.kotlingl.Scene
 import org.kotlingl.utils.checkGLError
 

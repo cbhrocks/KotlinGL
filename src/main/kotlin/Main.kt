@@ -10,6 +10,7 @@ import org.kotlingl.Input.InputEvent
 import org.kotlingl.Input.InputHandler
 import org.kotlingl.Input.InputManager
 import org.kotlingl.Input.MenuInputContext
+import org.kotlingl.devtools.DevTools
 import org.kotlingl.lighting.*
 import org.kotlingl.model.ModelLoader
 import org.kotlingl.model.PrimitiveFactory

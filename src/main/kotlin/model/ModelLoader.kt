@@ -92,7 +92,10 @@ object ModelLoader {
         return PrimitiveFactory.createQuad(
             modelData.name,
             modelData.material
-        ).apply{
+        ).apply {
+            val aspectRatio = (modelData.material.diffuseTexture?.width?.toFloat() ?: 1f)/
+                    (modelData.material.diffuseTexture?.height ?: 1)
+            transform(scale=Vector3f(aspectRatio, 1f, 1f))
             modelData.animations.forEach {
                 textureAnimator.addAnimation("quad", it)
             }
@@ -596,7 +599,13 @@ object ModelLoader {
             )
 
             // Try to group based on animation name prefix
-            val animName = name.substringBeforeLast('_')
+            var animName: String
+            if (name.substringAfterLast("_").matches(Regex("[A-Za-z0-9]"))) {
+                animName = name.substringBeforeLast('_')
+            }
+            else {
+                animName = name
+            }
             spriteMap.getOrPut(animName) { mutableListOf() }.add(name to bb)
         }
 
@@ -611,10 +620,10 @@ object ModelLoader {
             // currently animations only switch frames when the time reaches the point of the keyframe. This can cause
             // animations with only 2 frames to never play the second one. We get around this by adding the first frame
             // onto the end
-            if (keyframes.size == 2) {
+            if (keyframes.size <= 2) {
                 keyframes.addLast(
                     Keyframe(
-                        keyframes[1].time * 2,
+                        keyframes.last().time * 2,
                         keyframes[0].value
                     )
                 )
