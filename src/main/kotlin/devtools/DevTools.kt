@@ -54,8 +54,6 @@ object DevTools {
     private val statusBar = FPSWindow(ImBoolean(true))
     private val modelWindows = mutableMapOf<String, ModelWindow>()
     private val movementEnabled = ImBoolean(false)
-    private val newModelOpen = ImBoolean(false)
-    private val newModel2DOpen = ImBoolean(false)
 
     val inputContext = object : InputContext {
         override fun handleInput(event: InputEvent) {
