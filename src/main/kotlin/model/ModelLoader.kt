@@ -13,19 +13,17 @@ import org.lwjgl.assimp.*
 import org.lwjgl.assimp.Assimp.*
 import org.lwjgl.stb.STBImage.*
 import org.lwjgl.system.MemoryStack
+import org.lwjgl.system.MemoryUtil
 import org.w3c.dom.Document
 import org.w3c.dom.Element
 import java.nio.ByteBuffer
-import java.nio.channels.Channels
+import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.IllegalStateException
 import kotlin.collections.joinToString
 import kotlin.collections.plusAssign
-import kotlin.io.path.Path
-import kotlin.io.path.absolute
 import kotlin.io.path.extension
-import kotlin.io.path.toPath
 
 
 data class ModelCacheData (
@@ -102,11 +100,20 @@ object ModelLoader {
         }
     }
 
-    fun loadModel(filePath: String, name: String) {
+    fun loadModelFromResource(resourcePath: String, name: String) {
+        val modelUrl = ResourceLoader.getResourceURL(resourcePath)
+        val modelPath = Paths.get(modelUrl.toURI())
+        val dirPath = ResourceLoader.extractResourceDirectory(resourcePath.substringBeforeLast("/"))
+
+        val filePath = dirPath.resolve(modelPath.fileName)
+        loadModel(filePath, name)
+    }
+
+    fun loadModel(filePath: Path, name: String) {
         if (modelLookup.containsKey(name)) throw IllegalArgumentException("model already exists with that name!")
-        if (modelCache.containsKey(filePath)) throw IllegalArgumentException("model already loaded!")
+        if (modelCache.containsKey(filePath.toString())) throw IllegalArgumentException("model already loaded!")
         importModel(filePath)
-        modelLookup[name] = filePath
+        modelLookup[name] = filePath.toString()
     }
 
     fun loadModelFromSpriteSheetAtlas(filePath: String, name: String) {
@@ -116,10 +123,8 @@ object ModelLoader {
         modelLookup[name] = filePath
     }
 
-    private fun importModel(resourcePath: String) {
+    private fun importModel(path: Path) {
         //val path = normalizePath(filepath)
-        val url = object {}.javaClass.getResource(resourcePath)
-        val path = url!!.toURI().toPath()
 
         val flags = when (path.extension) {
             "fbx" -> aiProcess_Triangulate or
@@ -147,10 +152,10 @@ object ModelLoader {
                     aiProcess_RemoveRedundantMaterials
         }
 
-        val scene = aiImportFile(path.absolute().toString(), flags)
+        val scene = aiImportFile(path.toString(), flags)
             ?: throw RuntimeException("Error loading scene: ${aiGetErrorString()}")
 
-        val directory = Path(resourcePath).parent
+        val directory = path.parent
 
         val rootNode = scene.mRootNode() ?: throw RuntimeException( "failed to load model from scene." )
 
@@ -207,7 +212,7 @@ object ModelLoader {
             skeletonHash
         )
         modelCacheData.skeletonHash = skeletonHash
-        modelCache[resourcePath] = modelCacheData
+        modelCache[path.toString()] = modelCacheData
 
         aiReleaseImport(scene)
     }
@@ -219,22 +224,19 @@ object ModelLoader {
         else -> WrapMode.REPEAT
     }
 
-    fun loadByteBufferFromResource(resourcePath: String): ByteBuffer {
-        val stream = ResourceLoader.getResourceAsStream(resourcePath)
-
-        stream.use {
-            val channel = Channels.newChannel(it)
-            //val buffer = ByteBuffer.allocateDirect(it.available())
-            val buffer = BufferUtils.createByteBuffer(it.available())
+    fun loadByteBufferFromFile(filePath: Path): ByteBuffer {
+        val size = Files.size(filePath).toInt()
+        val buffer = MemoryUtil.memAlloc(size)
+        Files.newByteChannel(filePath).use { channel ->
             channel.read(buffer)
-            buffer.flip()
-            return buffer
         }
+        buffer.flip()
+        return buffer
     }
 
-    fun importTextureFromResource(path: String, flip: Boolean = false): Texture {
+    fun importTextureFromFile(path: Path, flip: Boolean = false): Texture {
         // Step 1: Load resource as ByteBuffer
-        val imageBuffer = loadByteBufferFromResource(path)
+        val imageBuffer = loadByteBufferFromFile(path)
 
         // Step 2: Decode image using STBImage
         stbi_set_flip_vertically_on_load(flip)
@@ -317,8 +319,8 @@ object ModelLoader {
                 } else {
                     // External file
                     val texturePath = pathBuffer.dataString().replace("\\", "/")
-                    val fullPath = "/" + modelDirectory.resolve(texturePath).normalize().joinToString("/")
-                    return@getOrPut importTextureFromResource(fullPath)
+                    val fullPath = modelDirectory.resolve(texturePath).normalize()
+                    return@getOrPut importTextureFromFile(fullPath)
                 }
             }
             texture.wrapU = aiToWrapMode(mapMode[0])
@@ -550,9 +552,9 @@ object ModelLoader {
         // create Material for model2D
         val doc = ResourceLoader.loadXmlDocument(filePath)
         val texturePath = Paths.get(ResourceLoader.normalizePath(filePath)).parent.resolve(
-                doc.documentElement.getAttribute("imagePath")).toString()
-        val texture = textureCache.getOrPut(texturePath) {
-            importTextureFromResource(texturePath, true)
+                doc.documentElement.getAttribute("imagePath"))
+        val texture = textureCache.getOrPut(texturePath.toString()) {
+            importTextureFromFile(texturePath, true)
         }
         val material = Material(
             texture,

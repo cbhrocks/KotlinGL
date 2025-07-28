@@ -2,26 +2,19 @@ package org.kotlingl.devtools
 
 import imgui.ImGui
 import imgui.ImVec2
-import imgui.flag.ImGuiCol
-import imgui.flag.ImGuiCond
-import imgui.flag.ImGuiTreeNodeFlags
 import imgui.flag.ImGuiWindowFlags
 import imgui.gl3.ImGuiImplGl3
 import imgui.glfw.ImGuiImplGlfw
 import imgui.type.ImBoolean
 import imgui.type.ImFloat
 import imgui.type.ImInt
-import org.joml.Quaternionf
-import org.joml.Vector3f
 import org.kotlingl.FrameTimer
 import org.kotlingl.Input.InputContext
 import org.kotlingl.Input.InputEvent
 import org.kotlingl.Scene
 import org.kotlingl.Settings
-import org.kotlingl.math.toFloatArray
 import org.kotlingl.model.Model
 import org.kotlingl.model.PrimitiveFactory
-import org.kotlingl.model.SkeletonNode
 import org.kotlingl.utils.checkGLError
 import org.lwjgl.glfw.GLFW.GLFW_KEY_A
 import org.lwjgl.glfw.GLFW.GLFW_KEY_D
@@ -30,6 +23,9 @@ import org.lwjgl.glfw.GLFW.GLFW_KEY_W
 import org.lwjgl.opengl.ARBFramebufferObject.GL_FRAMEBUFFER
 import org.lwjgl.opengl.ARBFramebufferObject.glBindFramebuffer
 import org.lwjgl.opengl.GL11
+import java.nio.file.Paths
+
+val TEXT_WIDTH = ImGui.calcTextSize("A").x
 
 data class FPSWindow(
     var open: ImBoolean,

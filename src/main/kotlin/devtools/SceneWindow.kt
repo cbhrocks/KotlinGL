@@ -13,10 +13,14 @@ import org.kotlingl.Scene
 import org.kotlingl.devtools.DevTools.createNewQuad
 import org.kotlingl.devtools.DevTools.createNewSphere
 import org.kotlingl.model.Model
+import org.kotlingl.model.ModelLoader
+import java.nio.file.Paths
+import kotlin.io.path.absolute
 
 class SceneWindow(val scene: Scene): Window() {
     private val activeLayerIndex = ImInt(0)
     private val modelWindows = mutableMapOf<String, ModelWindow>()
+    private val fileBrowser = FileBrowser(Paths.get("src/main/resources").absolute())
 
     override fun update() {
         if (!open.get())
@@ -62,9 +66,20 @@ class SceneWindow(val scene: Scene): Window() {
                     }
                     if (menuItem("Model 3D...")){
                         // ImGuiFileDialog
+                        fileBrowser.open(
+                            "Open 3D Model",
+                            "*.fbx"
+                        ) {
+                            ModelLoader.loadModel(Paths.get("src/main/resources"), "test")
+                        }
                     }
                     if (menuItem("Model 2D...")){
-
+                        fileBrowser.open(
+                            "Open 2D Model",
+                            "*.xml"
+                        ) {
+                            ModelLoader.loadModel(it, "test")
+                        }
                     }
                     endMenu()
                 }
@@ -73,5 +88,6 @@ class SceneWindow(val scene: Scene): Window() {
         }
         end()
         modelWindows.values.forEach { it.update() }
+        fileBrowser.update()
     }
 }
