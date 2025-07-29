@@ -10,10 +10,9 @@ import imgui.type.ImBoolean
 import imgui.type.ImInt
 import imgui.type.ImString
 import org.kotlingl.Scene
-import org.kotlingl.devtools.DevTools.createNewQuad
-import org.kotlingl.devtools.DevTools.createNewSphere
 import org.kotlingl.model.Model
 import org.kotlingl.model.ModelLoader
+import org.kotlingl.model.PrimitiveFactory
 import java.nio.file.Paths
 import kotlin.io.path.absolute
 
@@ -70,7 +69,10 @@ class SceneWindow(val scene: Scene): Window() {
                             "Open 3D Model",
                             "*.fbx"
                         ) {
-                            ModelLoader.loadModel(Paths.get("src/main/resources"), "test")
+                            ModelLoader.loadModel(it, "test")
+                            val model = ModelLoader.createModel("test").apply { initGL() }
+                            DevTools.scene.layers.getValue(DevTools.scene.getLayerNames()[activeLayerIndex.get()])
+                                .objects.addLast(model)
                         }
                     }
                     if (menuItem("Model 2D...")){
@@ -78,7 +80,7 @@ class SceneWindow(val scene: Scene): Window() {
                             "Open 2D Model",
                             "*.xml"
                         ) {
-                            ModelLoader.loadModel(it, "test")
+                            ModelLoader.loadModelFromSpriteSheetAtlas(it, "test")
                         }
                     }
                     endMenu()
@@ -89,5 +91,19 @@ class SceneWindow(val scene: Scene): Window() {
         end()
         modelWindows.values.forEach { it.update() }
         fileBrowser.update()
+    }
+
+    fun createNewQuad() {
+        val name = "Quad_" + DevObjects.quads.count() + 1
+        val newQuad = PrimitiveFactory.createQuad(name).apply {initGL()}
+        DevObjects.quads[name] = newQuad
+        DevTools.scene.layers.getValue(DevTools.scene.getLayerNames()[activeLayerIndex.get()]).objects.addLast(newQuad)
+    }
+
+    fun createNewSphere() {
+        val name = "Sphere_" + DevObjects.spheres.count() + 1
+        val newSphere = PrimitiveFactory.createSphere(name).apply {initGL()}
+        DevObjects.spheres[name] = newSphere
+        DevTools.scene.layers.getValue(DevTools.scene.getLayerNames()[activeLayerIndex.get()]).objects.addLast(newSphere)
     }
 }

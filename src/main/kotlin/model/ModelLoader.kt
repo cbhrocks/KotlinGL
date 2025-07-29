@@ -100,27 +100,39 @@ object ModelLoader {
         }
     }
 
-    fun loadModelFromResource(resourcePath: String, name: String) {
-        val modelUrl = ResourceLoader.getResourceURL(resourcePath)
-        val modelPath = Paths.get(modelUrl.toURI())
-        val dirPath = ResourceLoader.extractResourceDirectory(resourcePath.substringBeforeLast("/"))
+    // fun loadModelFromResource(resourcePath: String, name: String) {
+    //     val modelUrl = ResourceLoader.getResourceURL(resourcePath)
+    //     val modelPath = Paths.get(modelUrl.toURI())
+    //     val dirPath = ResourceLoader.extractResourceDirectory(resourcePath.substringBeforeLast("/"))
 
-        val filePath = dirPath.resolve(modelPath.fileName)
-        loadModel(filePath, name)
-    }
+    //     val filePath = dirPath.resolve(modelPath.fileName)
+    //     loadModel(filePath, name)
+    // }
 
     fun loadModel(filePath: Path, name: String) {
         if (modelLookup.containsKey(name)) throw IllegalArgumentException("model already exists with that name!")
         if (modelCache.containsKey(filePath.toString())) throw IllegalArgumentException("model already loaded!")
-        importModel(filePath)
-        modelLookup[name] = filePath.toString()
+
+        val newFilePath = if (ResourceLoader.existsAsResource(filePath)) {
+            val tempDir = ResourceLoader.extractDirectoryToTemp(filePath.parent)
+            tempDir.resolve(filePath.fileName)
+        } else { filePath }
+
+        importModel(newFilePath)
+        modelLookup[name] = newFilePath.toString()
     }
 
-    fun loadModelFromSpriteSheetAtlas(filePath: String, name: String) {
+    fun loadModelFromSpriteSheetAtlas(filePath: Path, name: String) {
         if (modelLookup.containsKey(name)) throw IllegalArgumentException("model already exists with that name!")
-        if (modelCache2D.containsKey(filePath)) throw IllegalArgumentException("model already loaded!")
-        importModel2D(filePath)
-        modelLookup[name] = filePath
+        if (modelCache2D.containsKey(filePath.toString())) throw IllegalArgumentException("model already loaded!")
+
+        val newFilePath = if (ResourceLoader.existsAsResource(filePath)) {
+            val tempDir = ResourceLoader.extractDirectoryToTemp(filePath.parent)
+            tempDir.resolve(filePath.fileName)
+        } else { filePath }
+
+        importModel2D(newFilePath)
+        modelLookup[name] = newFilePath.toString()
     }
 
     private fun importModel(path: Path) {
@@ -548,11 +560,10 @@ object ModelLoader {
         )
     }
 
-    fun importModel2D(filePath: String) {
+    fun importModel2D(filePath: Path) {
         // create Material for model2D
         val doc = ResourceLoader.loadXmlDocument(filePath)
-        val texturePath = Paths.get(ResourceLoader.normalizePath(filePath)).parent.resolve(
-                doc.documentElement.getAttribute("imagePath"))
+        val texturePath = filePath.parent.resolve(doc.documentElement.getAttribute("imagePath"))
         val texture = textureCache.getOrPut(texturePath.toString()) {
             importTextureFromFile(texturePath, true)
         }
@@ -564,8 +575,8 @@ object ModelLoader {
             doc,
             texture
         )
-        modelCache2D.set(filePath, Model2DCacheData(
-            filePath,
+        modelCache2D.set(filePath.toString(), Model2DCacheData(
+            filePath.fileName.toString(),
             material,
             animations,
         ))

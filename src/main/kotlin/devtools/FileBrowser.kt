@@ -12,6 +12,7 @@ import imgui.flag.ImGuiTreeNodeFlags
 import imgui.flag.ImGuiWindowFlags
 import imgui.type.ImString
 import java.nio.file.Path
+import java.nio.file.Paths
 import kotlin.io.path.absolute
 import kotlin.io.path.extension
 import kotlin.io.path.fileSize
@@ -189,7 +190,8 @@ class FileBrowser(
             }
             sameLine()
             if (button("open")) {
-                onSubmit(currentPath)
+                onSubmit(Paths.get(selectedPath.get()))
+                close()
             }
 
             end()

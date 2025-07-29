@@ -42,7 +42,6 @@ object DevTools {
     lateinit var frameTimer: FrameTimer
     lateinit var sceneWindow: SceneWindow
 
-    private val activeLayer = ImInt(0)
     private val imguiGlfw = ImGuiImplGlfw()
     private val imguiGl3 = ImGuiImplGl3()
     private val settingsWindowOpen = ImBoolean(false)
@@ -227,19 +226,5 @@ object DevTools {
         imguiGl3.shutdown()
         imguiGlfw.shutdown()
         ImGui.destroyContext()
-    }
-
-    fun createNewQuad() {
-        val name = "Quad_" + DevObjects.quads.count() + 1
-        val newQuad = PrimitiveFactory.createQuad(name).apply {initGL()}
-        DevObjects.quads[name] = newQuad
-        scene.layers.getValue(scene.getLayerNames()[activeLayer.get()]).objects.addLast(newQuad)
-    }
-
-    fun createNewSphere() {
-        val name = "Sphere_" + DevObjects.spheres.count() + 1
-        val newSphere = PrimitiveFactory.createSphere(name).apply {initGL()}
-        DevObjects.spheres[name] = newSphere
-        scene.layers.getValue(scene.getLayerNames()[activeLayer.get()]).objects.addLast(newSphere)
     }
 }
