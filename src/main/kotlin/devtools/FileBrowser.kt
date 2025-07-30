@@ -169,12 +169,7 @@ class FileBrowser(
         if (!open.get())
             return
 
-        val mainViewport = getMainViewport();
-        val xPos = (mainViewport.workSizeX - windowSize.x)/2
-        val yPos = (mainViewport.workSizeY - windowSize.y)/2
-
-        setNextWindowPos(ImVec2(xPos, yPos), ImGuiCond.FirstUseEver);
-        setNextWindowSize(windowSize, ImGuiCond.FirstUseEver);
+        Utils.centerNextWindow(windowSize)
         if (begin(title, this.open)) {
             inputText("###current path", pathInputValue)
             sameLine()

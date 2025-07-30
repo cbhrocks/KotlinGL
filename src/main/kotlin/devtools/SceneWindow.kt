@@ -6,7 +6,6 @@ import imgui.ImVec2
 import imgui.flag.ImGuiCol
 import imgui.flag.ImGuiCond
 import imgui.flag.ImGuiWindowFlags
-import imgui.type.ImBoolean
 import imgui.type.ImInt
 import imgui.type.ImString
 import org.kotlingl.Scene
@@ -20,6 +19,45 @@ class SceneWindow(val scene: Scene): Window() {
     private val activeLayerIndex = ImInt(0)
     private val modelWindows = mutableMapOf<String, ModelWindow>()
     private val fileBrowser = FileBrowser(Paths.get("src/main/resources").absolute())
+    object newModelModal {
+        val title = "New Model"
+        val name = ImString()
+        val path = ImString()
+    }
+
+    fun newModelModal() {
+
+        val center = getMainViewport().getCenter()
+        setNextWindowPos(center, ImGuiCond.Appearing, ImVec2(0.5f, 0.5f));
+
+        if (beginPopupModal(newModelModal.title, ImGuiWindowFlags.AlwaysAutoResize))
+        {
+            inputText("Name", newModelModal.name)
+            inputText("Path", newModelModal.path)
+            sameLine()
+            if (button("browse...")) {
+                fileBrowser.open(
+                    "Open 3D Model",
+                    "*.fbx"
+                ) {
+                    newModelModal.path.set(it.toString())
+                }
+            }
+
+            if (button("Cancel", ImVec2(120f, 0f))) {
+                closeCurrentPopup();
+            }
+            sameLine()
+            if (button("Add", ImVec2(120f, 0f))) {
+                ModelLoader.loadModel(Paths.get(newModelModal.path.get()), "test")
+                val model = ModelLoader.createModel("test").apply { initGL() }
+                DevTools.scene.layers.getValue(DevTools.scene.getLayerNames()[activeLayerIndex.get()])
+                    .objects.addLast(model)
+                closeCurrentPopup();
+            }
+            endPopup()
+        }
+    }
 
     override fun update() {
         if (!open.get())
@@ -64,16 +102,7 @@ class SceneWindow(val scene: Scene): Window() {
                         createNewQuad()
                     }
                     if (menuItem("Model 3D...")){
-                        // ImGuiFileDialog
-                        fileBrowser.open(
-                            "Open 3D Model",
-                            "*.fbx"
-                        ) {
-                            ModelLoader.loadModel(it, "test")
-                            val model = ModelLoader.createModel("test").apply { initGL() }
-                            DevTools.scene.layers.getValue(DevTools.scene.getLayerNames()[activeLayerIndex.get()])
-                                .objects.addLast(model)
-                        }
+                        openPopup(newModelModal.title)
                     }
                     if (menuItem("Model 2D...")){
                         fileBrowser.open(
@@ -87,6 +116,7 @@ class SceneWindow(val scene: Scene): Window() {
                 }
                 endMenuBar()
             }
+            newModelModal()
         }
         end()
         modelWindows.values.forEach { it.update() }
