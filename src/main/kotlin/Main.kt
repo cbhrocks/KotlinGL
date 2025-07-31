@@ -165,8 +165,8 @@ fun main() {
                 "background",
                 mutableListOf(
                     // spider,
-                    blockyChar,
-                    testSprite
+                    LayerObject(blockyChar),
+                    LayerObject(testSprite)
                     //blockyChar2,
                     // sphere
                     // quad

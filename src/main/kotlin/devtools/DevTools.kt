@@ -1,6 +1,7 @@
 package org.kotlingl.devtools
 
 import imgui.ImGui
+import imgui.ImGui.beginPopupModal
 import imgui.ImVec2
 import imgui.flag.ImGuiWindowFlags
 import imgui.gl3.ImGuiImplGl3
@@ -13,6 +14,7 @@ import org.kotlingl.Input.InputContext
 import org.kotlingl.Input.InputEvent
 import org.kotlingl.Scene
 import org.kotlingl.Settings
+import org.kotlingl.devtools.SceneWindow.newModelModal
 import org.kotlingl.model.Model
 import org.kotlingl.model.PrimitiveFactory
 import org.kotlingl.utils.checkGLError

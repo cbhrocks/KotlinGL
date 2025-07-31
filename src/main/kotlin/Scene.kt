@@ -6,6 +6,7 @@ import org.kotlingl.entity.ColorRGB
 import org.kotlingl.entity.Intersection
 import org.kotlingl.lighting.Shader
 import org.kotlingl.lights.Light
+import org.kotlingl.model.Model
 import org.kotlingl.shapes.Drawable
 import org.kotlingl.shapes.GLResource
 import org.kotlingl.shapes.Intersectable
@@ -13,22 +14,30 @@ import org.kotlingl.shapes.Ray
 import org.kotlingl.shapes.Updatable
 import java.util.SortedMap
 
+class LayerObject(val obj: Any) {
+    val updatable: Updatable? = obj as? Updatable
+    val drawable: Drawable? = obj as? Drawable
+    val glResource: GLResource? = obj as? GLResource
+    val model: Model? = obj as? Model
+}
+
 class Layer(
     val name: String,
-    val objects: MutableList<Any>,
+    val objects: MutableList<LayerObject>,
     val camera: Camera? = null,
     val visible: Boolean = true,
     val shouldUpdate: Boolean = true,
 ) {
     fun update(timeDelta: Float) {
-        objects
-            .mapNotNull { it as? Updatable }
-            .forEach { it.update(timeDelta) }
+        objects.forEach { it.updatable?.update(timeDelta) }
     }
 
     fun initGL() {
-        objects.mapNotNull { it as? GLResource }
-            .forEach { it.initGL() }
+        objects.forEach { it.glResource?.initGL() }
+    }
+
+    fun addObject(obj: LayerObject) {
+        this.objects.addLast(obj)
     }
 }
 
@@ -89,14 +98,16 @@ data class Scene(
             it in layersToCheck
         }.values.flatMap{
             it.objects
-        }.mapNotNull {
-            it as? Drawable
         }.forEach {
-            it.draw(shader)
+            it.drawable?.draw(shader)
         }
     }
 
     fun getLayerNames() = layers.keys.toList()
 
     fun getAllObjects() = layers.values.flatMap { it.objects }
+
+    fun addObject(layerName: String, obj: Any) {
+        layers.getValue(layerName).addObject(LayerObject(obj))
+    }
 }

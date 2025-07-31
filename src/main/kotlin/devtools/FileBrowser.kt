@@ -94,7 +94,7 @@ class FileBrowser(
         pathInputValue.set(currentPath)
     }
 
-    fun displayFile(fileNode: FileNode) {
+    fun displayFile(fileNode: FileNode = rootNode) {
         tableNextRow()
         tableNextColumn()
 
@@ -158,9 +158,7 @@ class FileBrowser(
             tableSetupColumn("Type", ImGuiTableColumnFlags.WidthFixed, TEXT_WIDTH*18)
 
             tableHeadersRow()
-
-            displayFile(rootNode)
-
+            displayFile()
             endTable()
         }
     }
