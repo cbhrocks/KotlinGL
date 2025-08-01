@@ -30,7 +30,8 @@ void main() {
     vec2 clampedUv = mix(uUvMin, uUvMax, vTexCoord * material.uvScale);
 
     // Sample textures
-    vec3 diffuseColor = texture(material.diffuse, clampedUv).rgb;
+    vec4 diffuseColor = texture(material.diffuse, clampedUv);
+    float alpha = diffuseColor.a;
     vec3 specularColor = texture(material.specular, clampedUv).rgb;
 
     // Normal mapping
@@ -46,13 +47,10 @@ void main() {
     float spec = pow(max(dot(sampledNormal, halfDir), 0.0), material.shininess);
 
     // Fallback for baseColor if diffuse map is flat or black (optional)
-    vec3 base = length(diffuseColor) < 0.001 ? material.baseColor : diffuseColor;
+    vec3 base = length(diffuseColor.rgb) < 0.001 ? material.baseColor : diffuseColor.rgb;
 
-    vec3 color = uLightColor * (
-    base * diff +
-    specularColor * spec * material.reflect
-    );
+    vec3 color = uLightColor * ( base * diff + specularColor * spec * material.reflect );
 
     // FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-    FragColor = vec4(color, 1.0);
+    FragColor = vec4(color, alpha);
 }

@@ -569,7 +569,7 @@ object ModelLoader {
         }
         val material = Material(
             texture,
-            baseColor = ColorRGB(0, 0, 0, 0)
+            baseColor = ColorRGB(0, 0, 255, 0)
         )
         val animations = importAnimationsFromAtlas(
             doc,
