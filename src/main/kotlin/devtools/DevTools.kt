@@ -9,9 +9,12 @@ import imgui.glfw.ImGuiImplGlfw
 import imgui.type.ImBoolean
 import imgui.type.ImFloat
 import imgui.type.ImInt
+import org.joml.Vector2f
+import org.joml.Vector3f
 import org.kotlingl.FrameTimer
 import org.kotlingl.Input.InputContext
 import org.kotlingl.Input.InputEvent
+import org.kotlingl.Input.KeyAction
 import org.kotlingl.Scene
 import org.kotlingl.Settings
 import org.kotlingl.devtools.SceneWindow.newModelModal
@@ -51,33 +54,24 @@ object DevTools {
     private val statusBar = FPSWindow(ImBoolean(true))
     private val modelWindows = mutableMapOf<String, ModelWindow>()
     private val movementEnabled = ImBoolean(false)
+    val velocity: Vector2f = Vector2f(0.0f)
 
     val inputContext = object : InputContext {
+
         override fun handleInput(event: InputEvent) {
-            val bc = scene.cameraManager.getCamera("background")
-            when (event.key) {
-                GLFW_KEY_W -> {
-                    if (movementEnabled.get()) {
-                        bc.position.y += 0.05f; bc.lookAt.y += 0.05f
-                        event.consumed = true
+            if (movementEnabled.get()) {
+                when (event.action) {
+                    KeyAction.PRESSED -> when (event.key) {
+                        GLFW_KEY_W -> { velocity.y += 0.25f; event.consumed = true }
+                        GLFW_KEY_A -> { velocity.x -= 0.25f; event.consumed = true }
+                        GLFW_KEY_S -> { velocity.y -= 0.25f; event.consumed = true }
+                        GLFW_KEY_D -> { velocity.x += 0.25f; event.consumed = true }
                     }
-                }
-                GLFW_KEY_A -> {
-                    if (movementEnabled.get()) {
-                        bc.position.x -= 0.05f; bc.lookAt.x -= 0.05f
-                        event.consumed = true
-                    }
-                }
-                GLFW_KEY_S -> {
-                    if (movementEnabled.get()) {
-                        bc.position.y -= 0.05f; bc.lookAt.y -= 0.05f
-                        event.consumed = true
-                    }
-                }
-                GLFW_KEY_D -> {
-                    if (movementEnabled.get()) {
-                        bc.position.x += 0.05f; bc.lookAt.x += 0.05f
-                        event.consumed = true
+                    KeyAction.RELEASED -> when (event.key) {
+                        GLFW_KEY_W -> { velocity.y -= 0.25f; event.consumed = true }
+                        GLFW_KEY_A -> { velocity.x += 0.25f; event.consumed = true }
+                        GLFW_KEY_S -> { velocity.y += 0.25f; event.consumed = true }
+                        GLFW_KEY_D -> { velocity.x -= 0.25f; event.consumed = true }
                     }
                 }
             }
@@ -124,6 +118,11 @@ object DevTools {
         createNewSphereWindow()
         createStatusBar()
         sceneWindow.update()
+
+        scene.cameraManager.getCamera("background").apply {
+            position.add(Vector3f(velocity.x, velocity.y, 0f).mul(timeDelta))
+            lookAt.add(Vector3f(velocity.x, velocity.y, 0f).mul(timeDelta))
+        }
     }
 
     fun createMainMenuBar() {

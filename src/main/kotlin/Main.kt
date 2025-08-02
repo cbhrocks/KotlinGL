@@ -9,6 +9,7 @@ import org.kotlingl.Input.InputContext
 import org.kotlingl.Input.InputEvent
 import org.kotlingl.Input.InputHandler
 import org.kotlingl.Input.InputManager
+import org.kotlingl.Input.KeyAction
 import org.kotlingl.Input.MenuInputContext
 import org.kotlingl.devtools.DevTools
 import org.kotlingl.lighting.*
@@ -57,40 +58,24 @@ object Settings {
 
 object GameInputContext : InputContext {
     override fun handleInput(event: InputEvent) {
-        when (event.key) {
-            GLFW_KEY_W -> {
-                if (InputManager.isPressedOrHeld(event.key)) { }
-                event.consumed = true
-            }
-            GLFW_KEY_A -> {
-                if (InputManager.isPressedOrHeld(event.key)) { }
-                event.consumed = true
-            }
-            GLFW_KEY_S -> {
-                if (InputManager.isPressedOrHeld(event.key)) { }
-                event.consumed = true
-            }
-            GLFW_KEY_D -> {
-                if (InputManager.isPressedOrHeld(event.key)) { }
-                event.consumed = true
-            }
-            GLFW_KEY_GRAVE_ACCENT -> {
-                if (InputManager.isPressed(event.key)) {
-                    if (!Settings.devMode) {
-                        InputHandler.registerContext("DevTools", DevTools.inputContext, 10)
+        when (event.action) {
+            KeyAction.PRESSED -> {
+                when (event.key) {
+                    GLFW_KEY_GRAVE_ACCENT -> {
+                        if (!Settings.devMode) {
+                            InputHandler.registerContext("DevTools", DevTools.inputContext, 10)
+                        } else {
+                            InputHandler.deregisterContext("DevTools")
+                        }
+                        Settings.update {
+                            devMode = !Settings.devMode
+                        }
                     }
-                    else {
-                        InputHandler.deregisterContext("DevTools")
-                    }
-                    Settings.update {
-                        devMode = !Settings.devMode
-                    }
+                    GLFW_KEY_ESCAPE -> InputHandler.registerContext("MainMenu", MenuInputContext())
                 }
             }
-        }
 
-        if (InputManager.isPressed(GLFW_KEY_ESCAPE)) {
-            InputHandler.registerContext("MainMenu", MenuInputContext())
+            KeyAction.RELEASED -> Unit
         }
     }
 }
@@ -252,8 +237,7 @@ fun main() {
             // prerender update
             timer.update()
             val dt = timer.deltaTime
-            InputHandler.update()
-            InputManager.update(dt)
+            InputHandler.update(dt)
             scene.update(dt)
 
             if (Settings.devMode) {

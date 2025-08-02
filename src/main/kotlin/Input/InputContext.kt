@@ -8,12 +8,16 @@ interface InputContext {
 
 class MenuInputContext() : InputContext {
     override fun handleInput(event: InputEvent) {
-        if (InputManager.isPressed(GLFW_KEY_UP)) {
-            //menu.navigateUp()
-        }
-
-        if (InputManager.isPressed(GLFW_KEY_ESCAPE)) {
-            InputHandler.deregisterContext() // back to game
+        when (event.action) {
+            KeyAction.PRESSED -> when (event.key) {
+                GLFW_KEY_W, GLFW_KEY_UP -> {
+                    TODO()
+                }
+                GLFW_KEY_ESCAPE -> {
+                    InputHandler.deregisterContext()
+                }
+            }
+            KeyAction.RELEASED -> Unit
         }
     }
 }

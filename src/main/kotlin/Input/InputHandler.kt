@@ -1,9 +1,8 @@
 package org.kotlingl.Input
 
-import org.lwjgl.glfw.GLFW.GLFW_KEY_LAST
-
 data class InputEvent(
     val key: Int,
+    val action: KeyAction,
     var consumed: Boolean = false
 )
 
@@ -14,7 +13,15 @@ data class RegisteredContext(
     val insertionIndex: Int
 )
 
+enum class KeyAction {
+    PRESSED,
+    RELEASED
+}
+
 object InputHandler {
+    val eventQueue = ArrayDeque<InputEvent>()
+    val holdTimes = mutableMapOf<Int, Float>()
+
     private val contexts = mutableListOf<RegisteredContext>()
     private var insertionIndex = 0
 
@@ -32,16 +39,29 @@ object InputHandler {
         contexts.clear()
     }
 
-    fun update() {
+    fun receiveInput(key: Int, action: KeyAction) {
+        eventQueue.addLast(InputEvent(
+            key,
+            action,
+        ))
+    }
+
+    private fun updateHoldTimes(key: Int, timeDelta: Float) {
+        holdTimes.merge(key, timeDelta) { key, value -> value + timeDelta }
+    }
+
+    fun getHoldTime(key: Int): Float {
+        return holdTimes.getOrDefault(key, 0f)
+    }
+
+    fun update(timeDelta: Float) {
         val sortedContexts = contexts.sortedWith(compareByDescending<RegisteredContext> { it.priority }.thenBy { it.insertionIndex })
 
-        for (key in 0..GLFW_KEY_LAST) {
-            // if the key has had a state change or is being held
-            if (!InputManager.isActive(key)) {
-                continue
-            }
+        while (eventQueue.isNotEmpty()) {
+            val event = eventQueue.removeFirst()
 
-            val event = InputEvent(key)
+            updateHoldTimes(event.key, timeDelta)
+
             sortedContexts.forEach {
                 if (event.consumed)
                     return@forEach
